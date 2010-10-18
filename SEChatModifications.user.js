@@ -145,11 +145,19 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             }
             return CommandState.SucceededDoClear;
         },
-        transcript: function () {
-            validateArgs(0);
-            var transcript = $("a.button[href^=/transcript]")[0];
-            var href = transcript.href;
-            window.open(href);
+        transcript: function (match) {
+            if (!match) {
+                var transcript = $("a.button[href^=/transcript]")[0];
+                var href = transcript.href;
+                window.open(href);
+            } else {
+                var searchField = $("input#searchbox");
+                var searchForm = searchField.parent("form");
+                var href = searchForm.attr('action');
+                var fieldName = searchField.attr('name');
+                var roomID = $("input[name='room']", searchForm).val();
+                window.open(href + "?room=" + roomID + "&" + fieldName + "=" + escape(match));
+            }
             return CommandState.SucceededDoClear;
         },
         load: function () {
