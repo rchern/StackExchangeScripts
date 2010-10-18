@@ -47,4 +47,3 @@ with_jquery(function($) {
     href = href.substring(0,href.lastIndexOf("/")) + "/timeline";
     $(".post-menu").append("<span class='lsep'>|</span> <a href='" + href + "'>timeline</a>");
 });
-alert("semodifications");
