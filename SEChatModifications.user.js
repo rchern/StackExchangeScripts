@@ -106,7 +106,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
     			retVal = 'superuser.com';
     			break;
     		case 'sf':
-    		case 'severfault':
+    		case 'serverfault':
     			retVal = 'serverfault.com';
     			break;
     		case 'wa':
@@ -114,12 +114,18 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
     		case 'nothingtoinstall':
     			retVal = 'webapps.stackexchange.com';
     			break;
+    		case '8bitlavapwnpwniesbossstagesixforhelp':
+    			retVal = 'gaming.stackexchange.com';
+    			break;
     		case 'askubuntu':
     		case 'ubuntu':
     			retVal = 'askubuntu.com';
     			break;
     		case 'onstartups':
     			retVal = 'answers.onstartups.com';
+    			break;
+    		case 'a51':
+    			retVal = 'area51.stackexchange.com';
     			break;
     		default: 
     			retVal = n + '.stackexchange.com';
@@ -272,11 +278,16 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         last: function (match) {
             match = $.makeArray(match).join(" ");
             var m = $(Selectors.getSignature(match)).last();
-            m.addClass("highlight");
-            window.setTimeout(function () {
-                m.removeClass("highlight");
-            }, 2000);
-            $.scrollTo(m, 200);
+            if(m.length){
+	            m.addClass("highlight");
+	            window.setTimeout(function () {
+	                m.removeClass("highlight");
+	            }, 2000);
+	            $.scrollTo(m, 200);
+            } else {
+            	showNotification('Last message cannot be found. Try /load more messages.', 2000)
+            }
+            
             return CommandState.SucceededDoClear;
         },
         list: function (match) {
