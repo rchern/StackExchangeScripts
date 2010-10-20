@@ -154,21 +154,22 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
     };
     
     var Storage = {
+    	storageName: window.location.pathname + 'chatHighlights', 
         add: function add(match) {
             var highlights = Storage.retrieveAll();
             // console.dir(highlights);
             if ($.inArray(match, highlights) < 0) {
                 highlights.push(match);
-                localStorage["chatHighlights"] = JSON.stringify(highlights);
+                localStorage[this.storageName] = JSON.stringify(highlights);
             }
         },
         remove: function remove(match) {
             var highlights = Storage.retrieveAll();
             highlights.splice($.inArray(match, highlights), 1);
-            localStorage["chatHighlights"] = JSON.stringify(highlights);
+            localStorage[this.storageName] = JSON.stringify(highlights);
         },
         retrieveAll: function retrieveAll() {
-            var highlights = localStorage["chatHighlights"];
+            var highlights = localStorage[this.storageName];
             if (highlights != null) {
                 highlights = JSON.parse(highlights);
             } else {
