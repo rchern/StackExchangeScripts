@@ -27,7 +27,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
     $.expr[':'].contains = function (a, i, m) {
         return jQuery(a).text().toUpperCase().indexOf(m[3].toUpperCase()) >= 0;
     };
-    
+
     function execute(name, args) {
         var returnVal;
         if (commands[name]) {
@@ -49,10 +49,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         inputError
         	.html(msg)
         	.fadeIn("slow").delay(delay).fadeOut("slow")
-        	.hover(function(){ 
-        		$(this).clearQueue(); 
-        	}, function() { 
-        		$(this).delay(700).fadeOut("slow"); 
+        	.hover(function () {
+        	    $(this).clearQueue();
+        	}, function () {
+        	    $(this).delay(delay).fadeOut("slow");
         	});
     }
 
@@ -97,11 +97,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             return "#my-rooms > li > a:first-child:contains('" + match + "')";
         }
     };
-    
+
     var Storage = {
         add: function add(match) {
             var highlights = Storage.retrieveAll();
-            // console.dir(highlights);
             if ($.inArray(match, highlights) < 0) {
                 highlights.push(match);
                 localStorage["chatHighlights"] = JSON.stringify(highlights);
@@ -139,7 +138,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             validateArgs(1, ["string"]);
             var selector = Selectors.getRoom(match) + "~ .quickswitch";
             var rooms = $(selector);
-            // console.log(selector + " - " + rooms.length);
             if (rooms.length == 1) {
                 window.location = $(rooms[0]).attr("href");
             } else {
@@ -158,7 +156,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             validateArgs(0);
             var getMore = $('#getmore');
             var m = $(".message")[0];
-            // console.log(m.id);
             getMore.data("events").click[0].handler(function () {
                 $(document).scrollTo(m, 400);
             });
@@ -197,26 +194,26 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             return CommandState.SucceededDoClear;
         },
         highlights: function () {
-            var highlights = Storage.retrieveAll(), 
+            var highlights = Storage.retrieveAll(),
             	ul = $('<ul />').addClass('gm_room_list');
-            
-            if(highlights.length > 0){
-	        	for(var i = 0; i < highlights.length; i++){
-	        		(function(current){
-			    		$('<a />').click(function(){
-			    			$('#input').val('/delhl ' + current).focus();
-			    			return false;
-			    		}).attr('href', '#')
+
+            if (highlights.length > 0) {
+                for (var i = 0; i < highlights.length; i++) {
+                    (function (current) {
+                        $('<a />').click(function () {
+                            $('#input').val('/delhl ' + current).focus();
+                            return false;
+                        }).attr('href', '#')
 			    			.text(current)
 				        	.wrap('<li />')
 				        	.parent()
 				        	.appendTo(ul);
-				        })(highlights[i]);
-	        	}
-	        } else {
-	        	ul = $('<p />').text('Currently there are no highlighted users or messages');
-	        }
-            
+                    })(highlights[i]);
+                }
+            } else {
+                ul = $('<p />').text('Currently there are no highlighted users or messages');
+            }
+
             showNotification(ul, 10E3);
             return CommandState.SucceededDoClear;
         },
@@ -232,49 +229,49 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         },
         list: function (match) {
             $.get('/', {
-            	'tab': 'all', 
-            	'sort': 'active',
-            	'page': 1, 
-            	'filter': match
+                'tab': 'all',
+                'sort': 'active',
+                'page': 1,
+                'filter': match
             }, function (data) {
-            	var ul = $('<ul />').addClass('gm_room_list'), 
-            		page = $(data), 
+                var ul = $('<ul />').addClass('gm_room_list'),
+            		page = $(data),
             		pageCount = page.filter('.pager').find('a').length;
-            	
-            	function processPage(){
-            		var room = $(this).find('h3 .room-name');
+
+                function processPage() {
+                    var room = $(this).find('h3 .room-name');
                     var href = room.find("a").attr("href");
 
                     var id = this.id.substring(this.id.indexOf('-') + 1);
-                    
-	                $('<a />').attr({
-	                	'href': href, 
-	                	'target': '_self'
-	                }).text(id + " - " + room.attr("title"))
+
+                    $('<a />').attr({
+                        'href': href,
+                        'target': '_self'
+                    }).text(id + " - " + room.attr("title"))
 	                	.wrap('<li />')
 	                	.parent()
 	                	.appendTo(ul);
-            	}
-            	
+                }
+
                 page.filter(".roomcard").each(processPage);
-                
-                if(pageCount >= 2){
-		            for(var i = 2; i <= pageCount; i++){
-		        		$.get('/', {
-							'tab': 'all', 
-							'sort': 'active',
-							'page': i, 
-							'filter': match
-						}, function (data) {
-							$(data).filter(".roomcard").each(processPage);
-							if(i >= pageCount ){ showNotification(ul, 10E3); }
-						});
-					}
-				} else {
-					showNotification(ul, 10E3);
-				}
+
+                if (pageCount >= 2) {
+                    for (var i = 2; i <= pageCount; i++) {
+                        $.get('/', {
+                            'tab': 'all',
+                            'sort': 'active',
+                            'page': i,
+                            'filter': match
+                        }, function (data) {
+                            $(data).filter(".roomcard").each(processPage);
+                            if (i >= pageCount) { showNotification(ul, 10E3); }
+                        });
+                    }
+                } else {
+                    showNotification(ul, 10E3);
+                }
             });
-            
+
             return CommandState.SucceededDoClear;
         },
         join: function (id) {
@@ -355,56 +352,46 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
                 }
             }
         });
-        
+
         var e = input.data("events").keydown; e.unshift(e.pop());
-        
+
         // Persistant highlighting Restoration
         var oldHighlights = Storage.retrieveAll();
-        
-        for(var i = 0; i < oldHighlights.length; i++){
-        	// Code copy and pasted from addhl()
-        	// Is there any way to evoke the functions internally? 
-        	 if (isNumber(oldHighlights[i])) {
-                 selector = Selectors.getMessage(oldHighlights[i]);
-             } else {
-                 selector = Selectors.getSignature(oldHighlights[i]);
-             }
-        	 
-             $(selector).livequery(function () {
-                 $(this).addClass("highlight");
-             });
+
+        for (var i = 0; i < oldHighlights.length; i++) {
+            commands.addhl(oldHighlights[i]);
         }
-        
+
         // Style insertion, a la GM_addStyle, but using jQuery CSS syntax
-        (function (style_obj){
-        	var styleText = '';
-        	
-        	for(var i in style_obj){
-        		styleText = styleText + i + '{';
-        		for(var p in style_obj[i]){
-        			styleText = styleText + p + ':' + style_obj[i][p] + ';';
-        		}
-        		styleText = styleText + '}';
-        		$('<style />').text(styleText).appendTo('head');
-        	}
+        (function (style_obj) {
+            var styleText = '';
+
+            for (var i in style_obj) {
+                styleText = styleText + i + '{';
+                for (var p in style_obj[i]) {
+                    styleText = styleText + p + ':' + style_obj[i][p] + ';';
+                }
+                styleText = styleText + '}';
+                $('<style />').text(styleText).appendTo('head');
+            }
         })( // Ugly brackets!
         {
-	        '.gm_room_list': {
-	    		'list-style': 'none',
-	    		'text-align': 'left', 
-	    		'font-size': '11px',
-	    		'column-count': '3',
-	    		'-moz-column-count': '3',
-	    		'-webkit-column-count': '3'
-	    	}, 
-	    	'.gm_room_list li a' : {
-	            'display': 'block',
-	    		'padding': '2px 8px'
-	    	},
-	    	'.gm_room_list li a:hover': {
-	    		'background-color': '#eee'
-	    	}
-	    });
-        
+        '.gm_room_list': {
+            'list-style': 'none',
+            'text-align': 'left',
+            'font-size': '11px',
+            'column-count': '3',
+            '-moz-column-count': '3',
+            '-webkit-column-count': '3'
+        },
+        '.gm_room_list li a': {
+            'display': 'block',
+            'padding': '2px 8px'
+        },
+        '.gm_room_list li a:hover': {
+            'background-color': '#eee'
+        }
     });
+
+});
 });
