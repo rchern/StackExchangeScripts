@@ -79,6 +79,55 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             }
         }
     }
+    
+    function matchSite(n, prefix){
+    	n = n.toLowerCase();
+    	var retVal;
+    	
+    	if(typeof prefix == 'undefined'){ prefix = '' }
+    	
+    	if(n.indexOf('meta') === 0) {
+    		n = n.substring(4);
+    		if(n.indexOf('.') === 0){ n = n.substring(1) }
+    		
+    		prefix = prefix + 'meta.';
+    	};
+    	
+    	switch(n){
+    		case 'so':
+    		case 'stackoverflow':
+    			retVal = 'stackoverflow.com';
+    			break;
+    		case 'mso':
+    			retVal = 'meta.stackoverflow.com';
+    			break;
+    		case 'su':
+    		case 'superuser':
+    			retVal = 'superuser.com';
+    			break;
+    		case 'sf':
+    		case 'severfault':
+    			retVal = 'serverfault.com';
+    			break;
+    		case 'wa':
+    		case 'nti':
+    		case 'nothingtoinstall':
+    			retVal = 'webapps.stackexchange.com';
+    			break;
+    		case 'askubuntu':
+    		case 'ubuntu':
+    			retVal = 'askubuntu.com';
+    			break;
+    		case 'onstartups':
+    			retVal = 'answers.onstartups.com';
+    			break;
+    		default: 
+    			retVal = n + '.stackexchange.com';
+    			break;
+    	}
+    	
+    	return 'http://' + prefix + retVal;
+    }
 
     function isNumber(n) {
         return !isNaN(parseInt(n, 10)) && isFinite(n);
@@ -309,6 +358,63 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
                 $(Selectors.getRoom(match) + "~ .quickleave").click();
             }
             return CommandState.SucceededDoClear;
+        },
+        profile: function() {
+        	match = $.makeArray(arguments).slice(1).join(" ");
+        	var url = matchSite(arguments[0], 'api.') + '/1.0/users', 
+        		currentSite = matchSite(arguments[0]);
+        	
+        	$.ajax({
+        	    'url': url,
+        	    dataType: 'jsonp',
+        	    jsonp: 'jsonp',
+        	    data: {
+        	        filter: match, 
+        	        pagesize: 50
+        	    },
+        	    cache: true,
+        	    success: function(data){
+        	    	var response = '';
+        	    	
+        	        if(data.total > 50){
+        	        	response = $('<p />').text('There are too many users that match your search.');
+        	        } else if(data.total === 0) {
+        	        	response = $('<p />').text('There are no user that match your search');
+        	        } else if(data.total === 1) {
+        	        	$('#input').val(currentSite + '/users/' + data.users[0].user_id);
+        	        	$('#sayit-button').click();
+        	        } else {
+        	        	response = $('<ul />').addClass('gm_room_list profile');
+        	        	
+        	        	for(var i = 0; i < data.users.length; i++){
+                            (function(current){
+        			    		var anchor = $('<a />').click(function(){
+        			    			$('#input').val(currentSite + '/users/' + current.user_id);
+        	        	        	$('#sayit-button').click();
+        			    			console.log()
+        	        	        	
+        			    			return false;
+        			    		}).attr('href', '#')
+        			    			.text(' ' + current.reputation)
+        				        	.wrap('<li />');
+        			    		
+        			    		$('<strong />').text(current.display_name).prependTo(anchor);
+        			    		
+        			    		$('<img />').attr({
+        			    			src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14', 
+        			    			alt: ''
+        			    		}).prependTo(anchor);
+        			    		
+        			    		anchor.parent().appendTo(response);
+        				    })(data.users[i]);
+        	        	}
+        	        }
+        	        
+        	        showNotification(response, 10E3);
+        	    }
+        	});
+        	
+        	return CommandState.SucceededDoClear;
         }
     };
 
@@ -399,10 +505,13 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 	    	}, 
 	    	'.gm_room_list li a' : {
 	            'display': 'block',
-	    		'padding': '2px 8px'
+	    		'padding': '4px 8px'
 	    	},
 	    	'.gm_room_list li a:hover': {
 	    		'background-color': '#eee'
+	    	},
+	    	'.gm_room_list.profile li img': {
+	    		'margin-right': '4px'
 	    	}
 	    });
         
