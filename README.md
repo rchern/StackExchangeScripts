@@ -7,12 +7,17 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
 * Quote a message
   * `/quote <id>`
   * `<id>` is the numeric id of a message
+* Reply to a message
+  * Begin your message with `:<id> `
+  * Example:  `:12345 hi yourself`
+  * This is not a /command because it is built-in chat functionality
 * Switch to another room
   * `/switch <match>`
   * `<match>` is any (partial) substring of the room name
   * Will only work if only a single room name matches the input
 * View the transcript
-  * `/transcript`
+  * `/transcript [match]`
+  * If `[match]` is specified, it will be used to search the transcript.
 * Load older messages
   * `/load`
 * /me support
@@ -33,7 +38,6 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
   * `<match>` is a (partial) substring of a username
 * List rooms with recent activity
   * `/list [match]`
-  * Currently returns just the first page of rooms sorted by activity
   * If `[match]` is specified, it will be used to filter the rooms
 * Join a room
   * `/join <id>`
@@ -41,16 +45,24 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
   * Doing `/list` first will give you the numeric ids
   * You do not have to be in the room already
 * Edit a message
-  * `/edit <id>`
+  * `/edit [id]`
   * `<id>` is the numeric id of the message you want to edit
   * Leave `<id>` blank to edit the last message
   * Messages may only be edited within 2 minutes of being posted. (Does not apply to mods)
+* Delete a message
+  * `/del [id]`
+  * `<id>` is the numeric id of the message you want to edit
+  * Leave `<id>` blank to delete the last message
+  * Messages may only be deleted within 2 minutes of being posted.  (Does not apply to mods)
 * Leave a room
   * `/leave [match]`
   * If `[match]` is not specified, then the current room will be used.
   * If `[match]` is a numeric id, then that room will be used.
   * If `[match]` is the word `all`, then all rooms will be used.
   * If `[match]` is a string, then it is assumed to be a (partial) substring of a room name.
+* View a user profile
+  * `/profile [site] <display name>`
+  * [site] will match for common abbreviations like SO, SF and NTI before defaulting to site.stackexchange.com.
 * Retry a rate limited message
   * Hit `ctrl+space` to resend the message.
 
