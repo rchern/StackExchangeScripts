@@ -53,6 +53,16 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
   * If `[match]` is a string, then it is assumed to be a (partial) substring of a room name.
 * Retry a rate limited message
   * Hit `ctrl+space` to resend the message.
+* Navigate messages with keyboard
+  * `Ctrl` + `Up Arrow` begins navigation
+  * `Ctrl` + `Down Arrow` cancels navigation and jumps to message input
+  * `Up Arrow` and `Down Arrow` navigate between messages
+  * On a selected message:
+    * `Q` quotes the selected message
+    * `E` edits the selected message
+    * `R` begins a reply to the selected message
+    * `D` removes the selected message
+    * `Right Arrow` edits or begins a reply to the selected message, depending on if you own it
 
 
 ##SEModifications
