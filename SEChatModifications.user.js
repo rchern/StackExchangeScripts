@@ -28,6 +28,57 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         return jQuery(a).text().toUpperCase().indexOf(m[3].toUpperCase()) >= 0;
     };
 
+    $.fn.extend({
+        bindAs: function(nth, type, data, fn) {
+            if (typeof type == "object") {
+                for (var key in type) {
+                    this.bindAs(nth, key, data, type[key], fn);
+                }
+            }
+
+            if (type.indexOf(' ') > -1) {
+                var s = type.split(' ');
+
+                for (var i = 0; i < s.length; ++i) {
+                    this.bindAs(nth, s[i], data, fn);
+                }
+            }
+
+            if ($.isFunction(data) || data === false) {
+                fn = data;
+                data = undefined;
+            }
+
+            if (nth < 0) {
+                nth = 0;
+            }
+
+            for (var i = 0; i < this.length; ++i) {
+                var elem = this[i];
+
+                $.event.add(elem, type, fn, data);
+
+                var elemData = jQuery.data(elem);
+                var eventKey = elem.nodeType ? "events" : "__events__";
+                var events = elemData[eventKey];
+
+                if (events && typeof events === "function") {
+                    events = events.events;
+                }
+
+                if (events) {
+                    var handlers = events[ type ];
+
+                    if (handlers && handlers.length > nth + 1) {
+                        handlers.splice(nth, 0, handlers.splice(handlers.length - 1, 1)[0]);
+                    }
+                }
+            }
+
+            return this;
+        }
+    });
+
     function execute(name, args) {
         var returnVal;
         if (commands[name]) {
@@ -138,6 +189,120 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
     function isNumber(n) {
         return !isNaN(parseInt(n, 10)) && isFinite(n);
     }
+
+    var Navigation = {
+        _active: false,
+
+        _actions: {
+            '39' : function(target) {
+                return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
+            },
+            '68' : 'del',
+            '69' : 'edit',
+            '81' : 'quote',
+            '82' : 'reply',
+            'ctrl' : {
+                '39' : 'quote'
+            }
+        },
+        
+        launch: function(event) {
+            if (event.ctrlKey && event.which == 38) {
+                this.blur();
+
+                Navigation._active = true;
+
+                $(document).trigger(event);
+
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                return false;
+            }
+        },
+
+        navigate: function(event) {
+            if (event.ctrlKey && event.which == 40) {
+                $(document).scrollTop($(document).height());
+                $('#input').focus();
+
+                return true;
+            }
+
+            if (!Navigation._active) {
+                return true;
+            }
+
+            var selected = $('#chat .easy-navigation-selected');
+
+            if (event.which == 38 || event.which == 40) {
+                if (!selected.length) {
+                    selected = $('#chat .message:last').addClass('easy-navigation-selected');
+                } else {
+                    var action = event.which == 38 ? 'prev' : 'next',
+                        select = event.which == 38 ? 'last' : 'first',
+                        sibling = selected[action + 'All']('.message:first');
+
+                    if (!sibling.length) {
+                        sibling = selected.closest('.monologue')[action + 'All']('.monologue:first').find('.message:' + select);
+                    }
+
+                    if (sibling.length) {
+                        selected.removeClass('easy-navigation-selected');
+                        selected = sibling.addClass('easy-navigation-selected');
+                    }
+                }
+
+                var monologue = selected.closest('.monologue');
+                    selectedTopOffset = monologue.offset().top,
+                    scrollTopOffset = $(document).scrollTop();
+
+                if (selectedTopOffset < scrollTopOffset) {
+                    $(document).scrollTo(monologue);
+                } else {
+                    var selectedBottomOffset = selectedTopOffset + monologue.outerHeight(true),
+                        offsetDifference = selectedBottomOffset - $('#input-area').offset().top,
+                        scrollPosition = scrollTopOffset + offsetDifference + 5;
+
+                    if (offsetDifference > 0) {
+                        if (selected[0] == $('#chat .message:last')[0]) {
+                            scrollPosition = $(document).height();
+                        }
+
+                        $(document).scrollTop(scrollPosition);
+                    }
+                }
+
+                return false;
+            } else {
+                var command = (!event.ctrlKey ? Navigation._actions : Navigation._actions.ctrl)[event.which],
+                    message = selected.data('message');
+
+                if (command && !selected.find('.content > .deleted').length) {
+                    if (typeof command == 'function') {
+                        command = command(selected);
+                    }
+
+                    if (command == 'reply') {
+                        $('#input').val(':' + message + ' ');
+                    } else {
+                        execute(command, [message]);
+                    }
+
+                    $('#input').focus();
+
+                    return false;
+                } else if (command) {
+                    showNotification('Cannot perform actions on a deleted message...', 2000);
+                }
+            }
+        },
+        
+        deselect: function() {
+            Navigation._active = false;
+            $('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
+        }
+    };
 
     var Selectors = {
         getMessage: function getMessage(id) {
@@ -462,6 +627,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             //$(this).before("<div class='timestamp'>" + id + "</div>");
 
             if (!$(this).siblings('#id-' + id).length) {
+                $(this).data('message', id);
                 $('<div />').insertBefore(this)
 		        .text(id)
 		        .addClass('timestamp')
@@ -499,6 +665,12 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         for (var i = 0; i < oldHighlights.length; i++) {
             commands.addhl(oldHighlights[i]);
         }
+        
+        // Bind navigation controls
+        $('#input').bindAs(0, 'keydown', Navigation.launch);
+        $('#input').bindAs(0, 'focus', Navigation.deselect);
+        $(document).bindAs(0, 'click', Navigation.deselect);
+        $(document).bindAs(0, 'keydown', Navigation.navigate);
 
         // Style insertion, a la GM_addStyle, but using jQuery CSS syntax
         (function (style_obj) {
@@ -512,27 +684,31 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
                 styleText = styleText + '}';
                 $('<style />').text(styleText).appendTo('head');
             }
-        })( // Ugly brackets!
-        {
-        '.gm_room_list': {
-            'list-style': 'none',
-            'text-align': 'left',
-            'font-size': '11px',
-            'column-count': '3',
-            '-moz-column-count': '3',
-            '-webkit-column-count': '3'
-        },
-        '.gm_room_list li a': {
-            'display': 'block',
-            'padding': '4px 8px'
-        },
-        '.gm_room_list li a:hover': {
-            'background-color': '#eee'
-        },
-        '.gm_room_list.profile li img': {
-            'margin-right': '4px'
-        }
+        })({
+            '.gm_room_list': {
+                'list-style': 'none',
+                'text-align': 'left',
+                'font-size': '11px',
+                'column-count': '3',
+                '-moz-column-count': '3',
+                '-webkit-column-count': '3'
+            },
+            '.gm_room_list li a': {
+                'display': 'block',
+                'padding': '4px 8px'
+            },
+            '.gm_room_list li a:hover': {
+                'background-color': '#eee'
+	        },
+	        '.gm_room_list.profile li img': {
+	            'margin-right': '4px'
+            },
+            '.easy-navigation-selected' : {
+                'background-color': '#D2F7D0',
+                'margin-left': '5px',
+                '-moz-border-radius': '4px 4px 4px 4px',
+                'padding-left': '15px;'
+            }
+        });
     });
-
-});
 });
