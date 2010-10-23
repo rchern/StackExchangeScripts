@@ -49,11 +49,15 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         inputError
         	.html(msg)
         	.fadeIn("slow").delay(delay).fadeOut("slow")
-        	.hover(function(){ 
-        		$(this).clearQueue(); 
-        	}, function() { 
-        		$(this).delay(700).fadeOut("slow"); 
-        	});
+        	.hover(function(){
+        		$(this).stop(true, true).fadeIn(400); 
+        	}, function() {
+        		$(this).delay(900).fadeOut("slow"); 
+        	}).css({
+				maxHeight: $(window).height() - 90, 
+				maxWidth: '60%',
+				overflowY: 'scroll'
+			});
     }
 
     function validateArgs(expectedLength, expectedTypes) {
@@ -153,31 +157,88 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         }
     };
     
-    var Storage = {
-    	storageName: window.location.pathname + 'chatHighlights', 
-        add: function add(match) {
-            var highlights = Storage.retrieveAll();
-            // console.dir(highlights);
-            if ($.inArray(match, highlights) < 0) {
-                highlights.push(match);
-                localStorage[this.storageName] = JSON.stringify(highlights);
-            }
-        },
-        remove: function remove(match) {
-            var highlights = Storage.retrieveAll();
-            highlights.splice($.inArray(match, highlights), 1);
-            localStorage[this.storageName] = JSON.stringify(highlights);
-        },
-        retrieveAll: function retrieveAll() {
-            var highlights = localStorage[this.storageName];
-            if (highlights != null) {
-                highlights = JSON.parse(highlights);
-            } else {
-                highlights = [];
-            }
-            return highlights;
-        }
-    };
+    
+	function Storage(name) {
+		this.storageName = (name || window.location.pathname + 'chatHighlights');
+		this.items = [];
+		
+		if (localStorage[this.storageName] != null) {
+			this.items = JSON.parse(localStorage[this.storageName]);
+		} else {
+			this.items = [];
+		}
+		
+		this.add = function(match) {
+			if ($.inArray(match, this.items) < 0) {
+				this.items.push(match);
+				localStorage[this.storageName] = JSON.stringify(this.items);
+			}
+		}
+		
+		this.remove = function(match) {
+			this.items.splice($.inArray(match, this.items), 1);
+			localStorage[this.storageName] = JSON.stringify(this.items);
+		}
+	};
+    
+    var highlightStore = new Storage(), 
+		clipping = new Storage('chatClips');
+	
+	setInterval(function(){
+		if (localStorage[clipping.storageName] != null) {
+			clipping.items = JSON.parse(localStorage[clipping.storageName]);
+		} else {
+			clipping.items = [];
+		}
+	}, 2500);
+	
+	function createClipItem(index, room, display, hide){
+		var html = index + '. <em>' + room + '</em>';
+		
+		if(!$('<div />').html(display).find('div, p, blockquote').length){
+			html = html + ' | ';
+		}
+
+		var li = $('<li />').html(html + display), 
+			cl_commands = $('<div />').addClass('cl_commands').appendTo(li);
+		
+		$('<a />').text('Delete').click(function(){
+			li.slideUp(300, function(){
+				commands.clips();
+			});
+			
+			commands.rmclip(index);
+			return false;
+		}).appendTo(cl_commands);
+		
+		$('<a />').text('Paste').click(function(){
+			commands.paste(index);
+			return false;
+		}).appendTo(cl_commands);
+		
+		if(hide){
+			if(li.appendTo('body').height() > 60){
+				var h = li.height();
+				
+				var a = $('<a />').text('Show').toggle(function(){
+					$(this).text('Hide').parents('li').animate({
+						height: h
+					}, 300);
+				}, function(){
+					$(this).text('Show').parents('li').animate({
+						height: 60
+					}, 300);
+				}).appendTo(cl_commands);
+				
+				li.click(function(){
+					a.click();
+				}).height(60);
+			}
+		}
+		
+		return li;
+	}
+    
     var CommandState = { "NotFound": -1, "Failed": 0, "SucceededDoClear": 1, "SucceededNoClear": 2 };
     var commands = {
         star: function (id) {
@@ -234,7 +295,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             } else {
                 selector = Selectors.getSignature(match);
             }
-            Storage.add(match);
+            
+            highlightStore.add(match);
             $(selector).livequery(function () {
                 $(this).addClass("highlight");
             });
@@ -248,16 +310,16 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             } else {
                 selector = Selectors.getSignature(match);
             }
-            Storage.remove(match);
+            highlightStore.remove(match);
             $(selector).expire().removeClass("highlight");
             return CommandState.SucceededDoClear;
         },
         highlights: function () {
-            var highlights = Storage.retrieveAll(), 
-            	ul = $('<ul />').addClass('gm_room_list');
+			validateArgs(0);
+            var ul = $('<ul />').addClass('gm_room_list');
             
-            if(highlights.length > 0){
-	        	for(var i = 0; i < highlights.length; i++){
+            if(highlightStore.items.length > 0){
+	        	for(var i = 0; i < highlightStore.items.length; i++){
 	        		(function(current){
 			    		$('<a />').click(function(){
 			    			$('#input').val('/delhl ' + current).focus();
@@ -267,7 +329,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				        	.wrap('<li />')
 				        	.parent()
 				        	.appendTo(ul);
-				        })(highlights[i]);
+				        })(highlightStore.items[i]);
 	        	}
 	        } else {
 	        	ul = $('<p />').text('Currently there are no highlighted users or messages');
@@ -403,7 +465,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         			    		var anchor = $('<a />').click(function(){
         			    			$('#input').val(currentSite + '/users/' + current.user_id);
         	        	        	$('#sayit-button').click();
-        			    			console.log()
         	        	        	
         			    			return false;
         			    		}).attr('href', '#')
@@ -427,7 +488,62 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         	});
         	
         	return CommandState.SucceededDoClear;
-        }
+        }, 
+        
+        jot: function(){
+			var insert, display;
+			
+			if(isNumber(arguments[0])){
+				validateArgs(1, ['number']);
+				insert = 'http://' + window.location.hostname + '/transcript/message/' + arguments[0];
+				var content = $(Selectors.getMessage(arguments[0]));
+				
+				display = content.find('.content').html();
+			} else {
+				insert = $.makeArray(arguments).join(' ');
+				display = insert;
+			}
+			
+			clipping.add({
+				'display': display, 
+				'insert': insert, 
+				'room': $('#roomname').text()
+			});
+			
+			showNotification($('<ul />').append(createClipItem(clipping.items.length - 1, $('#roomname').text(), display, false)).addClass('clips_list'), 10E3);
+			
+			return CommandState.SucceededDoClear;
+		}, 
+		
+		clips: function(){
+			validateArgs(0);
+			
+			var ul = $('<ol />').addClass('clips_list');
+			
+			for(var i = 0; i < clipping.items.length; i++){
+				createClipItem(i, clipping.items[i].room, clipping.items[i].display, true).appendTo(ul);
+			}
+			
+			showNotification(ul, 10E3);
+			return CommandState.SucceededDoClear;
+		}, 
+		
+		paste: function(id){
+			validateArgs(1, ['number']);
+			
+			$('#input').val(clipping.items[id].insert);
+			$('#sayit-button').click();
+			
+			return CommandState.SucceededDoClear;
+		},
+		
+		rmclip: function(id){
+			validateArgs(1, ['number']);
+			
+			clipping.remove(clipping.items[id]);
+			
+			return CommandState.SucceededDoClear;
+		}
     };
 
     $(function () {
@@ -477,15 +593,13 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         var e = input.data("events").keydown; e.unshift(e.pop());
         
         // Persistant highlighting Restoration
-        var oldHighlights = Storage.retrieveAll();
-        
-        for(var i = 0; i < oldHighlights.length; i++){
+        for(var i = 0; i < highlightStore.items.length; i++){
         	// Code copy and pasted from addhl()
         	// Is there any way to evoke the functions internally? 
-        	 if (isNumber(oldHighlights[i])) {
-                 selector = Selectors.getMessage(oldHighlights[i]);
+        	 if (isNumber(highlightStore.items[i])) {
+                 selector = Selectors.getMessage(highlightStore.items[i]);
              } else {
-                 selector = Selectors.getSignature(oldHighlights[i]);
+                 selector = Selectors.getSignature(highlightStore.items[i]);
              }
         	 
              $(selector).livequery(function () {
@@ -503,14 +617,17 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         			styleText = styleText + p + ':' + style_obj[i][p] + ';';
         		}
         		styleText = styleText + '}';
-        		$('<style />').text(styleText).appendTo('head');
         	}
+        	
+        	$('<style />').text(styleText).appendTo('head');
         })( // Ugly brackets!
         {
 	        '.gm_room_list': {
 	    		'list-style': 'none',
 	    		'text-align': 'left', 
 	    		'font-size': '11px',
+	    		'padding': '10px', 
+	    		'margin': '0',
 	    		'column-count': '3',
 	    		'-moz-column-count': '3',
 	    		'-webkit-column-count': '3'
@@ -520,11 +637,43 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 	    		'padding': '4px 8px'
 	    	},
 	    	'.gm_room_list li a:hover': {
-	    		'background-color': '#eee'
+	    		'background-color': '#eee', 
+	    		'text-decoration': 'none'
 	    	},
 	    	'.gm_room_list.profile li img': {
 	    		'margin-right': '4px'
-	    	}
+	    	}, 
+	    	'.clips_list': {
+				'list-style': 'none',
+	    		'text-align': 'left', 
+	    		'font-size': '11px',
+	    		'padding': '8px 14px', 
+	    		'margin': '0'
+			}, 
+	    	'.clips_list li': {
+				'padding': '8px 20px', 
+				'border-bottom': '1px dashed #999',
+				'cursor': 'pointer', 
+				'overflow': 'hidden', 
+				'position': 'relative'
+			}, 
+	    	'.clips_list li:hover': {
+				'background-color': '#efefef'
+			},
+			'.clips_list li div.cl_commands': {
+				'position': 'absolute', 
+				'top': '5px',
+				'right': '5px', 
+				'display': 'none'
+			},
+			'.clips_list li:hover div.cl_commands': {
+				'display': 'block'
+			},
+			'.clips_list li div.cl_commands a': {
+				'display': 'inline-block', 
+				'padding': '2px 4px'
+			}
+			
 	    });
         
     });
