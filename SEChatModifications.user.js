@@ -27,7 +27,58 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
     $.expr[':'].contains = function (a, i, m) {
         return jQuery(a).text().toUpperCase().indexOf(m[3].toUpperCase()) >= 0;
     };
-    
+
+    $.fn.extend({
+        bindAs: function(nth, type, data, fn) {
+            if (typeof type == "object") {
+                for (var key in type) {
+                    this.bindAs(nth, key, data, type[key], fn);
+                }
+            }
+
+            if (type.indexOf(' ') > -1) {
+                var s = type.split(' ');
+
+                for (var i = 0; i < s.length; ++i) {
+                    this.bindAs(nth, s[i], data, fn);
+                }
+            }
+
+            if ($.isFunction(data) || data === false) {
+                fn = data;
+                data = undefined;
+            }
+
+            if (nth < 0) {
+                nth = 0;
+            }
+
+            for (var i = 0; i < this.length; ++i) {
+                var elem = this[i];
+
+                $.event.add(elem, type, fn, data);
+
+                var elemData = jQuery.data(elem);
+                var eventKey = elem.nodeType ? "events" : "__events__";
+                var events = elemData[eventKey];
+
+                if (events && typeof events === "function") {
+                    events = events.events;
+                }
+
+                if (events) {
+                    var handlers = events[ type ];
+
+                    if (handlers && handlers.length > nth + 1) {
+                        handlers.splice(nth, 0, handlers.splice(handlers.length - 1, 1)[0]);
+                    }
+                }
+            }
+
+            return this;
+        }
+    });
+
     function execute(name, args) {
         var returnVal;
         if (commands[name]) {
@@ -49,10 +100,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         inputError
         	.html(msg)
         	.fadeIn("slow").delay(delay).fadeOut("slow")
-        	.hover(function(){
-        		$(this).stop(true, true).fadeIn(400); 
-        	}, function() {
-        		$(this).delay(900).fadeOut("slow"); 
+        	.hover(function () {
+        	    $(this).clearQueue();
+        	}, function () {
+        	    $(this).delay(delay).fadeOut("slow");
         	}).css({
 				maxHeight: $(window).height() - 90, 
 				maxWidth: '60%',
@@ -83,65 +134,179 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             }
         }
     }
-    
-    function matchSite(n, prefix){
-    	n = n.toLowerCase();
-    	var retVal;
-    	
-    	if(typeof prefix == 'undefined'){ prefix = '' }
-    	
-    	if(n.indexOf('meta') === 0) {
-    		n = n.substring(4);
-    		if(n.indexOf('.') === 0){ n = n.substring(1) }
-    		
-    		prefix = prefix + 'meta.';
-    	};
-    	
-    	switch(n){
-    		case 'so':
-    		case 'stackoverflow':
-    			retVal = 'stackoverflow.com';
-    			break;
-    		case 'mso':
-    			retVal = 'meta.stackoverflow.com';
-    			break;
-    		case 'su':
-    		case 'superuser':
-    			retVal = 'superuser.com';
-    			break;
-    		case 'sf':
-    		case 'serverfault':
-    			retVal = 'serverfault.com';
-    			break;
-    		case 'wa':
-    		case 'nti':
-    		case 'nothingtoinstall':
-    			retVal = 'webapps.stackexchange.com';
-    			break;
-    		case '8bitlavapwnpwniesbossstagesixforhelp':
-    			retVal = 'gaming.stackexchange.com';
-    			break;
-    		case 'askubuntu':
-    		case 'ubuntu':
-    			retVal = 'askubuntu.com';
-    			break;
-    		case 'onstartups':
-    			retVal = 'answers.onstartups.com';
-    			break;
-    		case 'a51':
-    			retVal = 'area51.stackexchange.com';
-    			break;
-    		default: 
-    			retVal = n + '.stackexchange.com';
-    			break;
-    	}
-    	
-    	return 'http://' + prefix + retVal;
+
+    function matchSite(n, prefix) {
+        n = n.toLowerCase();
+        var retVal;
+
+        if (typeof prefix == 'undefined') { prefix = '' }
+
+        if (n.indexOf('meta') === 0) {
+            n = n.substring(4);
+            if (n.indexOf('.') === 0) { n = n.substring(1) }
+
+            prefix = prefix + 'meta.';
+        };
+
+        switch (n) {
+            case 'so':
+            case 'stackoverflow':
+                retVal = 'stackoverflow.com';
+                break;
+            case 'mso':
+                retVal = 'meta.stackoverflow.com';
+                break;
+            case 'su':
+            case 'superuser':
+                retVal = 'superuser.com';
+                break;
+            case 'sf':
+            case 'serverfault':
+                retVal = 'serverfault.com';
+                break;
+            case 'wa':
+            case 'nti':
+            case 'nothingtoinstall':
+                retVal = 'webapps.stackexchange.com';
+                break;
+            case '8bitlavapwnpwniesbossstagesixforhelp':
+                retVal = 'gaming.stackexchange.com';
+                break;
+            case 'askubuntu':
+            case 'ubuntu':
+                retVal = 'askubuntu.com';
+                break;
+            case 'onstartups':
+                retVal = 'answers.onstartups.com';
+                break;
+            case 'a51':
+                retVal = 'area51.stackexchange.com';
+                break;
+            default:
+                retVal = n + '.stackexchange.com';
+                break;
+        }
+
+        return 'http://' + prefix + retVal;
     }
 
     function isNumber(n) {
         return !isNaN(parseInt(n, 10)) && isFinite(n);
     }
+
+    var Navigation = {
+        _active: false,
+
+        _actions: {
+            '39' : function(target) {
+                return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
+            },
+            '68' : 'del',
+            '69' : 'edit',
+            '81' : 'quote',
+            '82' : 'reply',
+            'ctrl' : {
+                '39' : 'quote'
+            }
+        },
+        
+        launch: function(event) {
+            if (event.ctrlKey && event.which == 38) {
+                this.blur();
+
+                Navigation._active = true;
+
+                $(document).trigger(event);
+
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                return false;
+            }
+        },
+
+        navigate: function(event) {
+            if (event.ctrlKey && event.which == 40) {
+                $(document).scrollTop($(document).height());
+                $('#input').focus();
+
+                return true;
+            }
+
+            if (!Navigation._active) {
+                return true;
+            }
+
+            var selected = $('#chat .easy-navigation-selected');
+
+            if (event.which == 38 || event.which == 40) {
+                if (!selected.length) {
+                    selected = $('#chat .message:last').addClass('easy-navigation-selected');
+                } else {
+                    var action = event.which == 38 ? 'prev' : 'next',
+                        select = event.which == 38 ? 'last' : 'first',
+                        sibling = selected[action + 'All']('.message:first');
+
+                    if (!sibling.length) {
+                        sibling = selected.closest('.monologue')[action + 'All']('.monologue:first').find('.message:' + select);
+                    }
+
+                    if (sibling.length) {
+                        selected.removeClass('easy-navigation-selected');
+                        selected = sibling.addClass('easy-navigation-selected');
+                    }
+                }
+
+                var monologue = selected.closest('.monologue');
+                    selectedTopOffset = monologue.offset().top,
+                    scrollTopOffset = $(document).scrollTop();
+
+                if (selectedTopOffset < scrollTopOffset) {
+                    $(document).scrollTo(monologue);
+                } else {
+                    var selectedBottomOffset = selectedTopOffset + monologue.outerHeight(true),
+                        offsetDifference = selectedBottomOffset - $('#input-area').offset().top,
+                        scrollPosition = scrollTopOffset + offsetDifference + 5;
+
+                    if (offsetDifference > 0) {
+                        if (selected[0] == $('#chat .message:last')[0]) {
+                            scrollPosition = $(document).height();
+                        }
+
+                        $(document).scrollTop(scrollPosition);
+                    }
+                }
+
+                return false;
+            } else {
+                var command = (!event.ctrlKey ? Navigation._actions : Navigation._actions.ctrl)[event.which],
+                    message = selected.data('message');
+
+                if (command && !selected.find('.content > .deleted').length) {
+                    if (typeof command == 'function') {
+                        command = command(selected);
+                    }
+
+                    if (command == 'reply') {
+                        $('#input').val(':' + message + ' ');
+                    } else {
+                        execute(command, [message]);
+                    }
+
+                    $('#input').focus();
+
+                    return false;
+                } else if (command) {
+                    showNotification('Cannot perform actions on a deleted message...', 2000);
+                }
+            }
+        },
+        
+        deselect: function() {
+            Navigation._active = false;
+            $('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
+        }
+    };
 
     var Selectors = {
         getMessage: function getMessage(id) {
@@ -156,8 +321,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             return "#my-rooms > li > a:first-child:contains('" + match + "')";
         }
     };
-    
-    
+
 	function Storage(name) {
 		this.storageName = (name || window.location.pathname + 'chatHighlights');
 		this.items = [];
@@ -238,7 +402,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		
 		return li;
 	}
-    
+	
     var CommandState = { "NotFound": -1, "Failed": 0, "SucceededDoClear": 1, "SucceededNoClear": 2 };
     var commands = {
         star: function (id) {
@@ -256,7 +420,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             validateArgs(1, ["string"]);
             var selector = Selectors.getRoom(match) + "~ .quickswitch";
             var rooms = $(selector);
-            // console.log(selector + " - " + rooms.length);
             if (rooms.length == 1) {
                 window.location = $(rooms[0]).attr("href");
             } else {
@@ -264,18 +427,25 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             }
             return CommandState.SucceededDoClear;
         },
-        transcript: function () {
-            validateArgs(0);
-            var transcript = $("a.button[href^=/transcript]")[0];
-            var href = transcript.href;
-            window.open(href);
+        transcript: function (match) {
+            if (!match) {
+                var transcript = $("a.button[href^=/transcript]")[0];
+                var href = transcript.href;
+                window.open(href);
+            } else {
+                var searchField = $("input#searchbox");
+                var searchForm = searchField.parent("form");
+                var href = searchForm.attr('action');
+                var fieldName = searchField.attr('name');
+                var roomID = $("input[name='room']", searchForm).val();
+                window.open(href + "?room=" + roomID + "&" + fieldName + "=" + escape(match));
+            }
             return CommandState.SucceededDoClear;
         },
         load: function () {
             validateArgs(0);
             var getMore = $('#getmore');
             var m = $(".message")[0];
-            // console.log(m.id);
             getMore.data("events").click[0].handler(function () {
                 $(document).scrollTo(m, 400);
             });
@@ -341,63 +511,63 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         last: function (match) {
             match = $.makeArray(match).join(" ");
             var m = $(Selectors.getSignature(match)).last();
-            if(m.length){
-	            m.addClass("highlight");
-	            window.setTimeout(function () {
-	                m.removeClass("highlight");
-	            }, 2000);
-	            $.scrollTo(m, 200);
+            if (m.length) {
+                m.addClass("highlight");
+                window.setTimeout(function () {
+                    m.removeClass("highlight");
+                }, 2000);
+                $.scrollTo(m, 200);
             } else {
-            	showNotification('Last message cannot be found. Try /load more messages.', 2000)
+                showNotification('Last message cannot be found. Try /load more messages.', 2000)
             }
-            
+
             return CommandState.SucceededDoClear;
         },
         list: function (match) {
             $.get('/', {
-            	'tab': 'all', 
-            	'sort': 'active',
-            	'page': 1, 
-            	'filter': match
+                'tab': 'all',
+                'sort': 'active',
+                'page': 1,
+                'filter': match
             }, function (data) {
-            	var ul = $('<ul />').addClass('gm_room_list'), 
-            		page = $(data), 
+                var ul = $('<ul />').addClass('gm_room_list'),
+            		page = $(data),
             		pageCount = page.filter('.pager').find('a').length;
-            	
-            	function processPage(){
-            		var room = $(this).find('h3 .room-name');
+
+                function processPage() {
+                    var room = $(this).find('h3 .room-name');
                     var href = room.find("a").attr("href");
 
                     var id = this.id.substring(this.id.indexOf('-') + 1);
-                    
-	                $('<a />').attr({
-	                	'href': href, 
-	                	'target': '_self'
-	                }).text(id + " - " + room.attr("title"))
+
+                    $('<a />').attr({
+                        'href': href,
+                        'target': '_self'
+                    }).text(id + " - " + room.attr("title"))
 	                	.wrap('<li />')
 	                	.parent()
 	                	.appendTo(ul);
-            	}
-            	
+                }
+
                 page.filter(".roomcard").each(processPage);
-                
-                if(pageCount >= 2){
-		            for(var i = 2; i <= pageCount; i++){
-		        		$.get('/', {
-							'tab': 'all', 
-							'sort': 'active',
-							'page': i, 
-							'filter': match
-						}, function (data) {
-							$(data).filter(".roomcard").each(processPage);
-							if(i >= pageCount ){ showNotification(ul, 10E3); }
-						});
-					}
-				} else {
-					showNotification(ul, 10E3);
-				}
+
+                if (pageCount >= 2) {
+                    for (var i = 2; i <= pageCount; i++) {
+                        $.get('/', {
+                            'tab': 'all',
+                            'sort': 'active',
+                            'page': i,
+                            'filter': match
+                        }, function (data) {
+                            $(data).filter(".roomcard").each(processPage);
+                            if (i >= pageCount) { showNotification(ul, 10E3); }
+                        });
+                    }
+                } else {
+                    showNotification(ul, 10E3);
+                }
             });
-            
+
             return CommandState.SucceededDoClear;
         },
         join: function (id) {
@@ -417,6 +587,18 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             }
             return CommandState.SucceededNoClear;
         },
+        del: function (id) {
+            if (id == null) {
+                id = $(".user-container.mine:last .message:last").attr("id").replace("message-", "");
+            } else {
+                validateArgs(1, ["number"]);
+            }
+            var elements = $(Selectors.getMessage(id) + ".action-link").click().closest(".message").find(".delete").click();
+            if (elements.length !== 1) {
+                throw new Error("Unable to delete message.");
+            }
+            return CommandState.SucceededDoClear;
+        },
         leave: function (match) {
             if (!match) {
                 // No argument - Leave current room
@@ -433,9 +615,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             }
             return CommandState.SucceededDoClear;
         },
-        profile: function() {
-        	match = $.makeArray(arguments).slice(1).join(" ");
-        	var url = matchSite(arguments[0], 'api.') + '/1.0/users', 
+        profile: function () {
+            match = $.makeArray(arguments).slice(1).join(" ");
+            var url = matchSite(arguments[0], 'api.') + '/1.0/users',
         		currentSite = matchSite(arguments[0]);
         	
         	$.ajax({
@@ -561,6 +743,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             //$(this).before("<div class='timestamp'>" + id + "</div>");
 
             if (!$(this).siblings('#id-' + id).length) {
+                $(this).data('message', id);
                 $('<div />').insertBefore(this)
 		        .text(id)
 		        .addClass('timestamp')
@@ -589,24 +772,20 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
                 }
             }
         });
-        
+
         var e = input.data("events").keydown; e.unshift(e.pop());
-        
+
         // Persistant highlighting Restoration
         for(var i = 0; i < highlightStore.items.length; i++){
-        	// Code copy and pasted from addhl()
-        	// Is there any way to evoke the functions internally? 
-        	 if (isNumber(highlightStore.items[i])) {
-                 selector = Selectors.getMessage(highlightStore.items[i]);
-             } else {
-                 selector = Selectors.getSignature(highlightStore.items[i]);
-             }
-        	 
-             $(selector).livequery(function () {
-                 $(this).addClass("highlight");
-             });
+            commands.addhl(oldHighlights[i]);
         }
         
+        // Bind navigation controls
+        $('#input').bindAs(0, 'keydown', Navigation.launch);
+        $('#input').bindAs(0, 'focus', Navigation.deselect);
+        $(document).bindAs(0, 'click', Navigation.deselect);
+        $(document).bindAs(0, 'keydown', Navigation.navigate);
+
         // Style insertion, a la GM_addStyle, but using jQuery CSS syntax
         (function (style_obj){
         	var styleText = '';
@@ -672,9 +851,14 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			'.clips_list li div.cl_commands a': {
 				'display': 'inline-block', 
 				'padding': '2px 4px'
-			}
+			},
+            '.easy-navigation-selected' : {
+                'background-color': '#D2F7D0',
+                'margin-left': '5px',
+                '-moz-border-radius': '4px 4px 4px 4px',
+                'padding-left': '15px !important;'
+            }
 			
 	    });
-        
     });
 });
