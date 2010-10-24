@@ -94,3 +94,4 @@ Provides minor tweaks to StackExchange sites.
 * Adds a timeline link to each question page
 * Turns comment timestamps into links to the comment
   * Will only work if the comment is visible when the page is linked to.
+* Adds audit link to /reputation
