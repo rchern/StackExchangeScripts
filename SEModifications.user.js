@@ -33,17 +33,20 @@ function with_jquery(f) {
     document.body.appendChild(script);
 };
 
-with_jquery(function($) {
+with_jquery(function ($) {
 
-    // make comment timestamps a link to the comment
-    $(".comments tr").each(function() { 
-	var commentId = this.id; 
-	var href="<a href='#" + commentId + "'/>"; 
-	$(".comment-date",this).wrap(href); 
-    });
-    
-    // add timeline link to post menu
-    var href = $("#question-header a").attr("href").replace("questions","posts"); 
-    href = href.substring(0,href.lastIndexOf("/")) + "/timeline";
-    $(".post-menu").append("<span class='lsep'>|</span> <a href='" + href + "'>timeline</a>");
+	// make comment timestamps a link to the comment
+	$(".comments tr").each(function () {
+		var commentId = this.id;
+		var href = "<a href='#" + commentId + "'/>";
+		$(".comment-date", this).wrap(href);
+	});
+
+	// add timeline link to post menu
+	var questionHeader = $("#question-header a");
+	if (questionHeader.length == 1) {
+		var href = questionHeader.attr("href").replace("questions", "posts");
+		href = href.substring(0, href.lastIndexOf("/")) + "/timeline";
+		$(".post-menu").append("<span class='lsep'>|</span> <a href='" + href + "'>timeline</a>");
+	}
 });
