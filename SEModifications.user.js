@@ -34,19 +34,23 @@ function with_jquery(f) {
 };
 
 with_jquery(function ($) {
+	$(function () {
+		// make comment timestamps a link to the comment
+		$(".comments tr").each(function () {
+			var commentId = this.id;
+			var href = "<a href='#" + commentId + "'/>";
+			$(".comment-date", this).wrap(href);
+		});
 
-	// make comment timestamps a link to the comment
-	$(".comments tr").each(function () {
-		var commentId = this.id;
-		var href = "<a href='#" + commentId + "'/>";
-		$(".comment-date", this).wrap(href);
+		// add timeline link to post menu
+		var questionHeader = $("#question-header a");
+		if (questionHeader.length == 1) {
+			var href = questionHeader.attr("href").replace("questions", "posts");
+			href = href.substring(0, href.lastIndexOf("/")) + "/timeline";
+			$(".post-menu").append("<span class='lsep'>|</span><a href='" + href + "'>timeline</a>");
+		}
+
+		// adds an audit link next to your rep in the header that leads to /reputation
+		$("#hlinks-user .reputation-score").parent().after("<a href='/reputation'>(audit)</a>");
 	});
-
-	// add timeline link to post menu
-	var questionHeader = $("#question-header a");
-	if (questionHeader.length == 1) {
-		var href = questionHeader.attr("href").replace("questions", "posts");
-		href = href.substring(0, href.lastIndexOf("/")) + "/timeline";
-		$(".post-menu").append("<span class='lsep'>|</span><a href='" + href + "'>timeline</a>");
-	}
 });
