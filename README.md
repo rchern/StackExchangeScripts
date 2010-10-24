@@ -63,6 +63,16 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
 * View a user profile
   * `/profile [site] <display name>`
   * [site] will match for common abbreviations like SO, SF and NTI before defaulting to site.stackexchange.com.
+* Clipboard
+  * The clipboard is a place to store messages and notes to yourself
+  * `/jot [match]` is used to take down messages or notes. 
+    * If `[match]` is a number, than the message with that id is taken down into the clipboard, 
+      else everything else after `/jot` is stored into the clipboard as a note. 
+    * After jotting down things into the clipboard, an id will be shown. 
+      This id will be used to refer to the note when pasting or removing the message from the clipboard.
+  * `/clips` will show a list of all messages and notes taken. Clips and also be managed from here. 
+  * `/paste [id]` if a message is pasted, that message will be **quoted**, else a new message with the note's content will be generated
+  * `/rmclip [id]` will remove the clip with that id from the clipboard
 * Retry a rate limited message
   * Hit `ctrl+space` to resend the message.
 * Navigate messages with keyboard

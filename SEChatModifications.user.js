@@ -104,7 +104,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         	    $(this).clearQueue();
         	}, function () {
         	    $(this).delay(delay).fadeOut("slow");
-        	});
+        	}).css({
+				maxHeight: $(window).height() - 90, 
+				maxWidth: '60%',
+				overflowY: 'scroll'
+			});
     }
 
     function validateArgs(expectedLength, expectedTypes) {
@@ -319,30 +323,87 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         }
     };
 
-    var Storage = {
-        storageName: window.location.pathname + 'chatHighlights',
-        add: function add(match) {
-            var highlights = Storage.retrieveAll();
-            if ($.inArray(match, highlights) < 0) {
-                highlights.push(match);
-                localStorage[this.storageName] = JSON.stringify(highlights);
-            }
-        },
-        remove: function remove(match) {
-            var highlights = Storage.retrieveAll();
-            highlights.splice($.inArray(match, highlights), 1);
-            localStorage[this.storageName] = JSON.stringify(highlights);
-        },
-        retrieveAll: function retrieveAll() {
-            var highlights = localStorage[this.storageName];
-            if (highlights != null) {
-                highlights = JSON.parse(highlights);
-            } else {
-                highlights = [];
-            }
-            return highlights;
-        }
-    };
+	function Storage(name) {
+		this.storageName = (name || window.location.pathname + 'chatHighlights');
+		this.items = [];
+		
+		if (localStorage[this.storageName] != null) {
+			this.items = JSON.parse(localStorage[this.storageName]);
+		} else {
+			this.items = [];
+		}
+		
+		this.add = function(match) {
+			if ($.inArray(match, this.items) < 0) {
+				this.items.push(match);
+				localStorage[this.storageName] = JSON.stringify(this.items);
+			}
+		}
+		
+		this.remove = function(match) {
+			this.items.splice($.inArray(match, this.items), 1);
+			localStorage[this.storageName] = JSON.stringify(this.items);
+		}
+	};
+    
+    var highlightStore = new Storage(), 
+		clipping = new Storage('chatClips');
+	
+	setInterval(function(){
+		if (localStorage[clipping.storageName] != null) {
+			clipping.items = JSON.parse(localStorage[clipping.storageName]);
+		} else {
+			clipping.items = [];
+		}
+	}, 2500);
+	
+	function createClipItem(index, room, display, hide){
+		var html = index + '. <em>' + room + '</em>';
+		
+		if(!$('<div />').html(display).find('div, p, blockquote').length){
+			html = html + ' | ';
+		}
+
+		var li = $('<li />').html(html + display), 
+			cl_commands = $('<div />').addClass('cl_commands').appendTo(li);
+		
+		$('<a />').text('Delete').click(function(){
+			li.slideUp(300, function(){
+				commands.clips();
+			});
+			
+			commands.rmclip(index);
+			return false;
+		}).appendTo(cl_commands);
+		
+		$('<a />').text('Paste').click(function(){
+			commands.paste(index);
+			return false;
+		}).appendTo(cl_commands);
+		
+		if(hide){
+			if(li.appendTo('body').height() > 60){
+				var h = li.height();
+				
+				var a = $('<a />').text('Show').toggle(function(){
+					$(this).text('Hide').parents('li').animate({
+						height: h
+					}, 300);
+				}, function(){
+					$(this).text('Show').parents('li').animate({
+						height: 60
+					}, 300);
+				}).appendTo(cl_commands);
+				
+				li.click(function(){
+					a.click();
+				}).height(60);
+			}
+		}
+		
+		return li;
+	}
+	
     var CommandState = { "NotFound": -1, "Failed": 0, "SucceededDoClear": 1, "SucceededNoClear": 2 };
     var commands = {
         star: function (id) {
@@ -405,7 +466,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             } else {
                 selector = Selectors.getSignature(match);
             }
-            Storage.add(match);
+            
+            highlightStore.add(match);
             $(selector).livequery(function () {
                 $(this).addClass("highlight");
             });
@@ -419,31 +481,31 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             } else {
                 selector = Selectors.getSignature(match);
             }
-            Storage.remove(match);
+            highlightStore.remove(match);
             $(selector).expire().removeClass("highlight");
             return CommandState.SucceededDoClear;
         },
         highlights: function () {
-            var highlights = Storage.retrieveAll(),
-            	ul = $('<ul />').addClass('gm_room_list');
-
-            if (highlights.length > 0) {
-                for (var i = 0; i < highlights.length; i++) {
-                    (function (current) {
-                        $('<a />').click(function () {
-                            $('#input').val('/delhl ' + current).focus();
-                            return false;
-                        }).attr('href', '#')
+			validateArgs(0);
+            var ul = $('<ul />').addClass('gm_room_list');
+            
+            if(highlightStore.items.length > 0){
+	        	for(var i = 0; i < highlightStore.items.length; i++){
+	        		(function(current){
+			    		$('<a />').click(function(){
+			    			$('#input').val('/delhl ' + current).focus();
+			    			return false;
+			    		}).attr('href', '#')
 			    			.text(current)
 				        	.wrap('<li />')
 				        	.parent()
 				        	.appendTo(ul);
-                    })(highlights[i]);
-                }
-            } else {
-                ul = $('<p />').text('Currently there are no highlighted users or messages');
-            }
-
+				        })(highlightStore.items[i]);
+	        	}
+	        } else {
+	        	ul = $('<p />').text('Currently there are no highlighted users or messages');
+	        }
+            
             showNotification(ul, 10E3);
             return CommandState.SucceededDoClear;
         },
@@ -558,59 +620,113 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             match = $.makeArray(arguments).slice(1).join(" ");
             var url = matchSite(arguments[0], 'api.') + '/1.0/users',
         		currentSite = matchSite(arguments[0]);
-
-            $.ajax({
-                'url': url,
-                dataType: 'jsonp',
-                jsonp: 'jsonp',
-                data: {
-                    filter: match,
-                    pagesize: 50
-                },
-                cache: true,
-                success: function (data) {
-                    var response = '';
-
-                    if (data.total > 50) {
-                        response = $('<p />').text('There are too many users that match your search.');
-                    } else if (data.total === 0) {
-                        response = $('<p />').text('There are no user that match your search');
-                    } else if (data.total === 1) {
-                        $('#input').val(currentSite + '/users/' + data.users[0].user_id);
-                        $('#sayit-button').click();
-                    } else {
-                        response = $('<ul />').addClass('gm_room_list profile');
-
-                        for (var i = 0; i < data.users.length; i++) {
-                            (function (current) {
-                                var anchor = $('<a />').click(function () {
-                                    $('#input').val(currentSite + '/users/' + current.user_id);
-                                    $('#sayit-button').click();
-                                    console.log()
-
-                                    return false;
-                                }).attr('href', '#')
+        	
+        	$.ajax({
+        	    'url': url,
+        	    dataType: 'jsonp',
+        	    jsonp: 'jsonp',
+        	    data: {
+        	        filter: match, 
+        	        pagesize: 50
+        	    },
+        	    cache: true,
+        	    success: function(data){
+        	    	var response = '';
+        	    	
+        	        if(data.total > 50){
+        	        	response = $('<p />').text('There are too many users that match your search.');
+        	        } else if(data.total === 0) {
+        	        	response = $('<p />').text('There are no user that match your search');
+        	        } else if(data.total === 1) {
+        	        	$('#input').val(currentSite + '/users/' + data.users[0].user_id);
+        	        	$('#sayit-button').click();
+        	        } else {
+        	        	response = $('<ul />').addClass('gm_room_list profile');
+        	        	
+        	        	for(var i = 0; i < data.users.length; i++){
+                            (function(current){
+        			    		var anchor = $('<a />').click(function(){
+        			    			$('#input').val(currentSite + '/users/' + current.user_id);
+        	        	        	$('#sayit-button').click();
+        	        	        	
+        			    			return false;
+        			    		}).attr('href', '#')
         			    			.text(' ' + current.reputation)
         				        	.wrap('<li />');
-
-                                $('<strong />').text(current.display_name).prependTo(anchor);
-
-                                $('<img />').attr({
-                                    src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14',
-                                    alt: ''
-                                }).prependTo(anchor);
-
-                                anchor.parent().appendTo(response);
-                            })(data.users[i]);
-                        }
-                    }
-
-                    showNotification(response, 10E3);
-                }
-            });
-
-            return CommandState.SucceededDoClear;
-        }
+        			    		
+        			    		$('<strong />').text(current.display_name).prependTo(anchor);
+        			    		
+        			    		$('<img />').attr({
+        			    			src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14', 
+        			    			alt: ''
+        			    		}).prependTo(anchor);
+        			    		
+        			    		anchor.parent().appendTo(response);
+        				    })(data.users[i]);
+        	        	}
+        	        }
+        	        
+        	        showNotification(response, 10E3);
+        	    }
+        	});
+        	
+        	return CommandState.SucceededDoClear;
+        }, 
+        
+        jot: function(){
+			var insert, display;
+			
+			if(isNumber(arguments[0])){
+				validateArgs(1, ['number']);
+				insert = 'http://' + window.location.hostname + '/transcript/message/' + arguments[0];
+				var content = $(Selectors.getMessage(arguments[0]));
+				
+				display = content.find('.content').html();
+			} else {
+				insert = $.makeArray(arguments).join(' ');
+				display = insert;
+			}
+			
+			clipping.add({
+				'display': display, 
+				'insert': insert, 
+				'room': $('#roomname').text()
+			});
+			
+			showNotification($('<ul />').append(createClipItem(clipping.items.length - 1, $('#roomname').text(), display, false)).addClass('clips_list'), 10E3);
+			
+			return CommandState.SucceededDoClear;
+		}, 
+		
+		clips: function(){
+			validateArgs(0);
+			
+			var ul = $('<ol />').addClass('clips_list');
+			
+			for(var i = 0; i < clipping.items.length; i++){
+				createClipItem(i, clipping.items[i].room, clipping.items[i].display, true).appendTo(ul);
+			}
+			
+			showNotification(ul, 10E3);
+			return CommandState.SucceededDoClear;
+		}, 
+		
+		paste: function(id){
+			validateArgs(1, ['number']);
+			
+			$('#input').val(clipping.items[id].insert);
+			$('#sayit-button').click();
+			
+			return CommandState.SucceededDoClear;
+		},
+		
+		rmclip: function(id){
+			validateArgs(1, ['number']);
+			
+			clipping.remove(clipping.items[id]);
+			
+			return CommandState.SucceededDoClear;
+		}
     };
 
     $(function () {
@@ -661,9 +777,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         var e = input.data("events").keydown; e.unshift(e.pop());
 
         // Persistant highlighting Restoration
-        var oldHighlights = Storage.retrieveAll();
-
-        for (var i = 0; i < oldHighlights.length; i++) {
+        for(var i = 0; i < highlightStore.items.length; i++){
             commands.addhl(oldHighlights[i]);
         }
         
@@ -674,42 +788,78 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         $(document).bindAs(0, 'keydown', Navigation.navigate);
 
         // Style insertion, a la GM_addStyle, but using jQuery CSS syntax
-        (function (style_obj) {
-            var styleText = '';
-
-            for (var i in style_obj) {
-                styleText = styleText + i + '{';
-                for (var p in style_obj[i]) {
-                    styleText = styleText + p + ':' + style_obj[i][p] + ';';
-                }
-                styleText = styleText + '}';
-                $('<style />').text(styleText).appendTo('head');
-            }
-        })({
-            '.gm_room_list': {
-                'list-style': 'none',
-                'text-align': 'left',
-                'font-size': '11px',
-                'column-count': '3',
-                '-moz-column-count': '3',
-                '-webkit-column-count': '3'
-            },
-            '.gm_room_list li a': {
-                'display': 'block',
-                'padding': '4px 8px'
-            },
-            '.gm_room_list li a:hover': {
-                'background-color': '#eee'
-	        },
-	        '.gm_room_list.profile li img': {
-	            'margin-right': '4px'
-            },
+        (function (style_obj){
+        	var styleText = '';
+        	
+        	for(var i in style_obj){
+        		styleText = styleText + i + '{';
+        		for(var p in style_obj[i]){
+        			styleText = styleText + p + ':' + style_obj[i][p] + ';';
+        		}
+        		styleText = styleText + '}';
+        	}
+        	
+        	$('<style />').text(styleText).appendTo('head');
+        })( // Ugly brackets!
+        {
+	        '.gm_room_list': {
+	    		'list-style': 'none',
+	    		'text-align': 'left', 
+	    		'font-size': '11px',
+	    		'padding': '10px', 
+	    		'margin': '0',
+	    		'column-count': '3',
+	    		'-moz-column-count': '3',
+	    		'-webkit-column-count': '3'
+	    	}, 
+	    	'.gm_room_list li a' : {
+	            'display': 'block',
+	    		'padding': '4px 8px'
+	    	},
+	    	'.gm_room_list li a:hover': {
+	    		'background-color': '#eee', 
+	    		'text-decoration': 'none'
+	    	},
+	    	'.gm_room_list.profile li img': {
+	    		'margin-right': '4px'
+	    	}, 
+	    	'.clips_list': {
+				'list-style': 'none',
+	    		'text-align': 'left', 
+	    		'font-size': '11px',
+	    		'padding': '8px 14px', 
+	    		'margin': '0'
+			}, 
+	    	'.clips_list li': {
+				'padding': '8px 20px', 
+				'border-bottom': '1px dashed #999',
+				'cursor': 'pointer', 
+				'overflow': 'hidden', 
+				'position': 'relative'
+			}, 
+	    	'.clips_list li:hover': {
+				'background-color': '#efefef'
+			},
+			'.clips_list li div.cl_commands': {
+				'position': 'absolute', 
+				'top': '5px',
+				'right': '5px', 
+				'display': 'none'
+			},
+			'.clips_list li:hover div.cl_commands': {
+				'display': 'block'
+			},
+			'.clips_list li div.cl_commands a': {
+				'display': 'inline-block', 
+				'padding': '2px 4px'
+			},
             '.easy-navigation-selected' : {
                 'background-color': '#D2F7D0',
                 'margin-left': '5px',
                 '-moz-border-radius': '4px 4px 4px 4px',
-                'padding-left': '15px;'
+                'padding-left': '15px !important;'
             }
-        });
+			
+	    });
     });
 });
