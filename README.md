@@ -84,6 +84,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
     * `E` edits the selected message
     * `R` begins a reply to the selected message
     * `D` removes the selected message
+    * `S` stars the selected message
     * `Right Arrow` edits or begins a reply to the selected message, depending on if you own it
 
 

@@ -205,6 +205,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             '69' : 'edit',
             '81' : 'quote',
             '82' : 'reply',
+            '83' : 'star',
             'ctrl' : {
                 '39' : 'quote'
             }
