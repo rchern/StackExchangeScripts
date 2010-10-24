@@ -47,6 +47,6 @@ with_jquery(function ($) {
 	if (questionHeader.length == 1) {
 		var href = questionHeader.attr("href").replace("questions", "posts");
 		href = href.substring(0, href.lastIndexOf("/")) + "/timeline";
-		$(".post-menu").append("<span class='lsep'>|</span> <a href='" + href + "'>timeline</a>");
+		$(".post-menu").append("<span class='lsep'>|</span><a href='" + href + "'>timeline</a>");
 	}
 });
