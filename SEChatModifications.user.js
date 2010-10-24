@@ -680,10 +680,18 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				insert = 'http://' + window.location.hostname + '/transcript/message/' + arguments[0];
 				var content = $(Selectors.getMessage(arguments[0]));
 				
+				if(content.length !== 1){
+					throw new Error("The message you're trying to jot down cannot be found");
+				}
+				
 				display = content.find('.content').html();
 			} else {
 				insert = $.makeArray(arguments).join(' ');
 				display = insert;
+				
+				if(insert === '') {
+					throw new Error('You have not entered anything to be jotted down');
+				}
 			}
 			
 			clipping.add({
@@ -785,6 +793,25 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
         $('#input').bindAs(0, 'focus', Navigation.deselect);
         $(document).bindAs(0, 'click', Navigation.deselect);
         $(document).bindAs(0, 'keydown', Navigation.navigate);
+        
+        // Injecting Clipboard buttons
+        $('<button />')
+			.text('clipboard')
+			.addClass('button')
+			.appendTo('#chat-buttons')
+			.click(function(){
+				commands.clips();
+		});
+		
+		
+		$('.message').livequery(function(){
+			var c = this;
+			
+			$('<span />').prependTo($(this).find('.meta')).addClass('action_clip').attr('title', 'add this message to my clipboard').click(function(){
+				commands.jot(c.id.substring(8));
+			});
+		});
+		
 
         // Style insertion, a la GM_addStyle, but using jQuery CSS syntax
         (function (style_obj){
@@ -843,14 +870,31 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				'position': 'absolute', 
 				'top': '5px',
 				'right': '5px', 
-				'display': 'none'
+				'display': 'none', 
+				'border': '1px solid #ccc'
 			},
 			'.clips_list li:hover div.cl_commands': {
 				'display': 'block'
 			},
 			'.clips_list li div.cl_commands a': {
 				'display': 'inline-block', 
-				'padding': '2px 4px'
+				'padding': '2px 4px 3px',
+				'background-color': '#efefef'
+			},
+			'span.action_clip': {
+				'display': 'inline-block', 
+				'height': '11px', 
+				'width': '12px', 
+				'margin-right': '3px', 
+				'padding': '0', 
+				'background': 'url("http://sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
+				'cursor': 'pointer'
+			}, 
+			'#chat-body .monologue.mine .message:hover .meta': {
+				'display': 'inline-block !important'
+			},
+			'#chat-body .monologue.mine .message .meta .vote-count-container': {
+				'display': 'none !important'
 			},
             '.easy-navigation-selected' : {
                 'background-color': '#D2F7D0',
