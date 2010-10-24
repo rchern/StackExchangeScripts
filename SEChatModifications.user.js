@@ -277,20 +277,20 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
                 return false;
             } else {
                 var command = (!event.ctrlKey ? Navigation._actions : Navigation._actions.ctrl)[event.which],
-                    message = selected.data('message');
+                    message = selected[0].id.replace("message-", "");
 
                 if (command && !selected.find('.content > .deleted').length) {
                     if (typeof command == 'function') {
                         command = command(selected);
                     }
+                    
+                    $('#input').focus();
 
                     if (command == 'reply') {
                         $('#input').val(':' + message + ' ');
                     } else {
                         execute(command, [message]);
                     }
-
-                    $('#input').focus();
 
                     return false;
                 } else if (command) {
@@ -628,7 +628,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             //$(this).before("<div class='timestamp'>" + id + "</div>");
 
             if (!$(this).siblings('#id-' + id).length) {
-                $(this).data('message', id);
                 $('<div />').insertBefore(this)
 		        .text(id)
 		        .addClass('timestamp')
