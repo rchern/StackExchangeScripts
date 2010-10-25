@@ -179,9 +179,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             case 'onstartups':
                 retVal = 'answers.onstartups.com';
                 break;
-            case 'a51':
-                retVal = 'area51.stackexchange.com';
-                break;
+            case 'seasonedadvice':
+            case 'sa':
+				retVal = 'cooking.stackexchange.com';
+				break;
             default:
                 retVal = n + '.stackexchange.com';
                 break;
@@ -740,6 +741,44 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			clipping.remove(clipping.items[id]);
 			
 			return CommandState.SucceededDoClear;
+		}, 
+		
+		ob: function(url){
+			validateArgs(1, ['string']);
+			
+			url = url.replace(/https?:\/\/(www.)?/, '');
+			
+			if(url.indexOf('vimeo.com') > -1){
+				var id;
+				
+				if(url.match(/^vimeo.com\/[0-9]+/)){
+					id = url.split('/')[1];
+				} else if(url.match(/^vimeo.com\/channels\/[\d\w]+#[0-9]+/)){
+					id = url.split('#')[1];
+				} else if(url.match(/vimeo.com\/groups\/[\d\w]+\/videos\/[0-9]+/)){
+					id = url.split('/')[4];
+				} else {
+					throw new Error('Unsupported Vimeo URL');
+				}
+				
+				$.ajax({
+					url: 'http://vimeo.com/api/v2/video/'+ id + '.json', 
+					dataType: 'jsonp', 
+					success: function(data){
+						// Drop in small preview frame
+						$('#input').val(data[0].thumbnail_large);
+						$('#sayit-button').click();
+						
+						// Wait a bit before dropping in the video title
+						(function(title, url, name){
+							setTimeout(function(){
+								$('#input').val('[▶ Watch **' + title + '** by ' + name + ' on Vimeo](' + url + ')');
+								$('#sayit-button').click();
+							}, 400);
+						})(data[0].title, data[0].url, data[0].user_name);
+					}
+				});
+			}
 		}
     };
 
