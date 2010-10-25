@@ -418,6 +418,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             $("#sayit-button").click();
         },
         "switch": function (match) {
+			$('#input').val('');
+			
             validateArgs(1, ["string"]);
             var selector = Selectors.getRoom(match) + "~ .quickswitch";
             var rooms = $(selector);
@@ -572,6 +574,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             return CommandState.SucceededDoClear;
         },
         join: function (id) {
+			$('#input').val('');
+			
             validateArgs(1, ["number"]);
             window.location = "/rooms/" + id;
             return CommandState.SucceededDoClear;
@@ -601,6 +605,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
             return CommandState.SucceededDoClear;
         },
         leave: function (match) {
+			$('#input').val('');
+			
             if (!match) {
                 // No argument - Leave current room
                 $('#leave').click();
