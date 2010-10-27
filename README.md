@@ -63,6 +63,14 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
 * View a user profile
   * `/profile [site] <display name>`
   * [site] will match for common abbreviations like SO, SF and NTI before defaulting to site.stackexchange.com.
+* Pseudo-Oneboxes
+  * `/ob [url]` will create onebox-like series of messages that attempt to add onebox support for sites not "officially supported"
+    * **Vimeo:** Video links will be turned into a preview frame image of the video plus a link to the video in question. *Only the link, not the image, will take you to the video.*
+    * Supported URL formats: 
+      * `http://vimeo.com/{video-id}`
+      * `http://vimeo.com/channels/{channel-name}#{video-id}`
+      * `htt[://vimeo.com/category/{group-name}/videos/{video-id}`
+  * This feature is currently undergoing development so **any suggestions on what other sites to add and feedback on how it works will be very welcome.**
 * Clipboard
   * The clipboard is a place to store messages and notes to yourself
   * `/jot [match]` is used to take down messages or notes. 
