@@ -42,12 +42,25 @@ with_jquery(function ($) {
 			$(".comment-date", this).wrap(href);
 		});
 
-		// add timeline link to post menu
-		var questionHeader = $("#question-header a");
-		if (questionHeader.length == 1) {
-			var href = questionHeader.attr("href").replace("questions", "posts");
-			href = href.substring(0, href.lastIndexOf("/")) + "/timeline";
-			$(".post-menu").append("<span class='lsep'>|</span><a href='" + href + "'>timeline</a>");
+		// add timeline and history links to post menu
+		var questionURL = $("#question-header a").attr("href");
+		if (questionURL) {
+			var post = questionURL.replace("questions", "posts").replace(/\/[^\/]*$/, ""),
+				timeline = post + "/timeline",
+				revisions = post + "/revisions";
+			$(".post-menu").each(function() {
+				if (!revisions)
+					revisions = "/posts"
+						+ $(this).find("a:contains('link'):first")
+							.attr("href")
+							.replace(questionURL, "")
+							.replace(/#.*/, "")
+						+ "/revisions";
+
+				$(this).append("<span class='lsep'>|</span><a href='" + timeline + "'>timeline</a><span class='lsep'>|</span><a href='" + revisions + "'>history</a>");
+				
+				revisions = null;
+			});
 		}
 
 		// adds an audit link next to your rep in the header that leads to /reputation
