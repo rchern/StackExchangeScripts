@@ -2,12 +2,11 @@
 // @name          SE Chat Modifications
 // @description  A collection of modifications for SE chat rooms
 // @include        http://chat.meta.stackoverflow.com/rooms/*
-// @include        http://chat.webapps.stackexchange.com/rooms/*
+// @include        http://chat.stackexchange.com/rooms/*
 // @include        http://chat.stackoverflow.com/rooms/*
 // @include        http://chat.superuser.com/rooms/*
 // @include        http://chat.serverfault.com/rooms/*
 // @include        http://chat.askubuntu.com/rooms/*
-// @include        http://chat.*.stackexchange.com/rooms/*
 // @author         @rchern
 // ==/UserScript==
 
