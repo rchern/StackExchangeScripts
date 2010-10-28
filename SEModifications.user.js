@@ -48,6 +48,7 @@ with_jquery(function ($) {
 			var post = questionURL.replace("questions", "posts").replace(/\/[^\/]*$/, ""),
 				timeline = post + "/timeline",
 				revisions = post + "/revisions";
+			$("#question .post-menu").append("<span class='lsep'>|</span><a href='" + timeline + "'>timeline</a>");
 			$(".post-menu").each(function() {
 				if (!revisions)
 					revisions = "/posts"
@@ -57,7 +58,7 @@ with_jquery(function ($) {
 							.replace(/#.*/, "")
 						+ "/revisions";
 
-				$(this).append("<span class='lsep'>|</span><a href='" + timeline + "'>timeline</a><span class='lsep'>|</span><a href='" + revisions + "'>history</a>");
+				$(this).append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>");
 				
 				revisions = null;
 			});
