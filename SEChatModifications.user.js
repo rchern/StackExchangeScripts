@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name          SE Chat Modifications
+// @name		  SE Chat Modifications
 // @description  A collection of modifications for SE chat rooms
-// @include        http://chat.meta.stackoverflow.com/rooms/*
-// @include        http://chat.stackexchange.com/rooms/*
-// @include        http://chat.stackoverflow.com/rooms/*
-// @include        http://chat.superuser.com/rooms/*
-// @include        http://chat.serverfault.com/rooms/*
-// @include        http://chat.askubuntu.com/rooms/*
-// @author         @rchern
+// @include		http://chat.meta.stackoverflow.com/rooms/*
+// @include		http://chat.stackexchange.com/rooms/*
+// @include		http://chat.stackoverflow.com/rooms/*
+// @include		http://chat.superuser.com/rooms/*
+// @include		http://chat.serverfault.com/rooms/*
+// @include		http://chat.askubuntu.com/rooms/*
+// @author		 @rchern
 // ==/UserScript==
 
 function with_plugin(url, callback) {
@@ -97,17 +97,17 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		if (!delay) { delay = 3000; }
 		var inputError = $("#inputerror");
 		inputError
-        	.html(msg)
-        	.fadeIn("slow").delay(delay).fadeOut("slow")
-        	.hover(function () {
-        		$(this).clearQueue();
-        	}, function () {
-        		$(this).delay(delay).fadeOut("slow");
-        	}).css({
-        		maxHeight: $(window).height() - 90,
-        		maxWidth: '60%',
-        		overflowY: 'scroll'
-        	});
+			.html(msg)
+			.fadeIn("slow").delay(delay).fadeOut("slow")
+			.hover(function () {
+				$(this).clearQueue();
+			}, function () {
+				$(this).delay(delay).fadeOut("slow");
+			}).css({
+				maxHeight: $(window).height() - 90,
+				maxWidth: '60%',
+				overflowY: 'scroll'
+			});
 	}
 
 	function validateArgs(expectedLength, expectedTypes) {
@@ -245,8 +245,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					selected = $('#chat .message:last').addClass('easy-navigation-selected');
 				} else {
 					var action = event.which == 38 ? 'prev' : 'next',
-                        select = event.which == 38 ? 'last' : 'first',
-                        sibling = selected[action + 'All']('.message:first');
+						select = event.which == 38 ? 'last' : 'first',
+						sibling = selected[action + 'All']('.message:first');
 
 					if (!sibling.length) {
 						sibling = selected.closest('.monologue')[action + 'All']('.monologue:first').find('.message:' + select);
@@ -260,14 +260,14 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 				var monologue = selected.closest('.monologue');
 				selectedTopOffset = monologue.offset().top,
-                    scrollTopOffset = $(document).scrollTop();
+					scrollTopOffset = $(document).scrollTop();
 
 				if (selectedTopOffset < scrollTopOffset) {
 					$(document).scrollTo(monologue);
 				} else {
 					var selectedBottomOffset = selectedTopOffset + monologue.outerHeight(true),
-                        offsetDifference = selectedBottomOffset - $('#input-area').offset().top,
-                        scrollPosition = scrollTopOffset + offsetDifference + 5;
+						offsetDifference = selectedBottomOffset - $('#input-area').offset().top,
+						scrollPosition = scrollTopOffset + offsetDifference + 5;
 
 					if (offsetDifference > 0) {
 						if (selected[0] == $('#chat .message:last')[0]) {
@@ -281,7 +281,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				return false;
 			} else {
 				var command = (!event.ctrlKey ? Navigation._actions : Navigation._actions.ctrl)[event.which],
-                    message = selected[0].id.replace("message-", "");
+					message = selected[0].id.replace("message-", "");
 
 				if (command && !selected.find('.content > .deleted').length) {
 					if (typeof command == 'function') {
@@ -498,10 +498,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 							$('#input').val('/delhl ' + current).focus();
 							return false;
 						}).attr('href', '#')
-			    			.text(current)
-				        	.wrap('<li />')
-				        	.parent()
-				        	.appendTo(ul);
+							.text(current)
+							.wrap('<li />')
+							.parent()
+							.appendTo(ul);
 					})(highlightStore.items[i]);
 				}
 			} else {
@@ -534,8 +534,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				'filter': match
 			}, function (data) {
 				var ul = $('<ul />').addClass('gm_room_list'),
-            		page = $(data),
-            		pageCount = page.filter('.pager').find('a').length;
+					page = $(data),
+					pageCount = page.filter('.pager').find('a').length;
 
 				function processPage() {
 					var room = $(this).find('h3 .room-name');
@@ -547,9 +547,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 						'href': href,
 						'target': '_self'
 					}).text(id + " - " + room.attr("title"))
-	                	.wrap('<li />')
-	                	.parent()
-	                	.appendTo(ul);
+						.wrap('<li />')
+						.parent()
+						.appendTo(ul);
 				}
 
 				page.filter(".roomcard").each(processPage);
@@ -625,7 +625,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		profile: function () {
 			match = $.makeArray(arguments).slice(1).join(" ");
 			var url = matchSite(arguments[0], 'api.') + '/1.0/users',
-        		currentSite = matchSite(arguments[0]);
+				currentSite = matchSite(arguments[0]);
 
 			$.ajax({
 				'url': url,
@@ -657,13 +657,13 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 									return false;
 								}).attr('href', '#')
-        			    			.text(' ' + current.reputation)
-        				        	.wrap('<li />');
+									.text(' ' + current.reputation)
+									.wrap('<li />');
 
 								$('<strong />').text(current.display_name).prependTo(anchor);
 
 								$('<img />').attr({
-									src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14',
+									src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14&d=identicon',
 									alt: ''
 								}).prependTo(anchor);
 
@@ -793,16 +793,16 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		// show the message ids on each 
 		$(".message:not(.pending):not(.posted)").livequery(function () {
 			var id = this.id.replace("message-", "");
-			//$(this).before("<div class='timestamp'>" + id + "</div>");
+			// $(this).before("<div class='timestamp'>" + id + "</div>");
 
 			if (!$(this).siblings('#id-' + id).length) {
-				var timestamp = new Date($(this).data().info.time * 1000);
-				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
-				$(this).prev(".timestamp").remove();
+				// var timestamp = new Date($(this).data().info.time * 1000);
+				// timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
+				// $(this).prev(".timestamp").remove();
 				$('<div />').insertBefore(this)
-		        .text(id + " " + timestamp)
-		        .addClass('timestamp')
-		        .attr('id', 'id-' + id);
+				.text(id)
+				.addClass('timestamp')
+				.attr('id', 'id-' + id);
 			}
 		});
 
@@ -850,7 +850,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				commands.clips();
 			});
 
-
 		$('.message').livequery(function () {
 			var c = this;
 
@@ -874,82 +873,84 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 			$('<style />').text(styleText).appendTo('head');
 		})( // Ugly brackets!
-        {
-        '.gm_room_list': {
-        	'list-style': 'none',
-        	'text-align': 'left',
-        	'font-size': '11px',
-        	'padding': '10px',
-        	'margin': '0',
-        	'column-count': '3',
-        	'-moz-column-count': '3',
-        	'-webkit-column-count': '3'
-        },
-        '.gm_room_list li a': {
-        	'display': 'block',
-        	'padding': '4px 8px'
-        },
-        '.gm_room_list li a:hover': {
-        	'background-color': '#eee',
-        	'text-decoration': 'none'
-        },
-        '.gm_room_list.profile li img': {
-        	'margin-right': '4px'
-        },
-        '.clips_list': {
-        	'list-style': 'none',
-        	'text-align': 'left',
-        	'font-size': '11px',
-        	'padding': '8px 14px',
-        	'margin': '0'
-        },
-        '.clips_list li': {
-        	'padding': '8px 20px',
-        	'border-bottom': '1px dashed #999',
-        	'cursor': 'pointer',
-        	'overflow': 'hidden',
-        	'position': 'relative'
-        },
-        '.clips_list li:hover': {
-        	'background-color': '#efefef'
-        },
-        '.clips_list li div.cl_commands': {
-        	'position': 'absolute',
-        	'top': '5px',
-        	'right': '5px',
-        	'display': 'none',
-        	'border': '1px solid #ccc'
-        },
-        '.clips_list li:hover div.cl_commands': {
-        	'display': 'block'
-        },
-        '.clips_list li div.cl_commands a': {
-        	'display': 'inline-block',
-        	'padding': '2px 4px 3px',
-        	'background-color': '#efefef'
-        },
-        'span.action_clip': {
-        	'display': 'inline-block',
-        	'height': '11px',
-        	'width': '12px',
-        	'margin-right': '3px',
-        	'padding': '0',
-        	'background': 'url("http://sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
-        	'cursor': 'pointer'
-        },
-        '#chat-body .monologue.mine .message:hover .meta': {
-        	'display': 'inline-block !important'
-        },
-        '#chat-body .monologue.mine .message .meta .vote-count-container': {
-        	'display': 'none !important'
-        },
-        '.easy-navigation-selected': {
-        	'background-color': '#D2F7D0',
-        	'margin-left': '5px',
-        	'-moz-border-radius': '4px 4px 4px 4px',
-        	'padding-left': '15px !important;'
-        }
+		{
+		'.gm_room_list': {
+			'list-style': 'none',
+			'text-align': 'left',
+			'font-size': '11px',
+			'padding': '10px',
+			'margin': '0',
+			'min-width': '540px'
+		},
+		'.gm_room_list li': {
+			'float': 'left',
+			'width': '33%'
+		},
+		'.gm_room_list li a': {
+			'display': 'block',
+			'padding': '4px 8px'
+		},
+		'.gm_room_list li a:hover': {
+			'background-color': '#eee',
+			'text-decoration': 'none'
+		},
+		'.gm_room_list.profile li img': {
+			'margin-right': '4px'
+		},
+		'.clips_list': {
+			'list-style': 'none',
+			'text-align': 'left',
+			'font-size': '11px',
+			'padding': '8px 14px',
+			'margin': '0'
+		},
+		'.clips_list li': {
+			'padding': '8px 20px',
+			'border-bottom': '1px dashed #999',
+			'cursor': 'pointer',
+			'overflow': 'hidden',
+			'position': 'relative'
+		},
+		'.clips_list li:hover': {
+			'background-color': '#efefef'
+		},
+		'.clips_list li div.cl_commands': {
+			'position': 'absolute',
+			'top': '5px',
+			'right': '5px',
+			'display': 'none',
+			'border': '1px solid #ccc'
+		},
+		'.clips_list li:hover div.cl_commands': {
+			'display': 'block'
+		},
+		'.clips_list li div.cl_commands a': {
+			'display': 'inline-block',
+			'padding': '2px 4px 3px',
+			'background-color': '#efefef'
+		},
+		'span.action_clip': {
+			'display': 'inline-block',
+			'height': '11px',
+			'width': '12px',
+			'margin-right': '3px',
+			'padding': '0',
+			'background': 'url("http://sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
+			'cursor': 'pointer'
+		},
+		'#chat-body .monologue.mine .message:hover .meta': {
+			'display': 'inline-block !important'
+		},
+		'#chat-body .monologue.mine .message .meta .vote-count-container': {
+			'display': 'none !important'
+		},
+		'.easy-navigation-selected': {
+			'background-color': '#D2F7D0',
+			'margin-left': '5px',
+			'-moz-border-radius': '4px 4px 4px 4px',
+			'padding-left': '15px !important;'
+		}
 
-       });
+	   });
 	});
 });
