@@ -796,11 +796,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			// $(this).before("<div class='timestamp'>" + id + "</div>");
 
 			if (!$(this).siblings('#id-' + id).length) {
-				// var timestamp = new Date($(this).data().info.time * 1000);
-				// timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
-				// $(this).prev(".timestamp").remove();
+				var timestamp = new Date($(this).data().info.time * 1000);
+				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
+				$(this).prev(".timestamp").remove();
 				$('<div />').insertBefore(this)
-				.text(id)
+				.text(id + " " + timestamp)
 				.addClass('timestamp')
 				.attr('id', 'id-' + id);
 			}
