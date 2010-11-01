@@ -94,6 +94,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
     * `D` removes the selected message
     * `S` stars the selected message
     * `Right Arrow` edits or begins a reply to the selected message, depending on if you own it
+    * `Left Arrow` and `P` display the replied-to message, if the selected message is an explicit reply
 
 
 ##SEModifications
