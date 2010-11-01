@@ -198,46 +198,16 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		_active: false,
 
 		_actions: {
-			'37': {
-				command: 'peek',
-				jump: false
+			'39': function (target) {
+				return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
 			},
-			'39': {
-				command: function (target) {
-					return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
-				},
-				jump: true
-			},
-			'68': {
-				command: 'del',
-				jump: true
-			},
-			'72': {
-				command: 'history',
-				jump: false
-			},
-			'69': {
-				command: 'edit',
-				jump: true
-			},
-			'80': {
-				command: 'peek',
-				jump: true
-			},
-			'81': {
-				command: 'quote',
-				jump: true
-			},
-			'82': {
-				command: 'reply',
-				jump: true
-			},
-			'83': {
-				command: 'star',
-				jump: true
-			},
+			'68': 'del',
+			'69': 'edit',
+			'81': 'quote',
+			'82': 'reply',
+			'83': 'star',
 			'ctrl': {
-
+				'39': 'quote'
 			}
 		},
 
@@ -256,29 +226,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 		},
 
-		peek: function (reply, text) {
-			if ((reply = $('#message-' + reply + '.easy-navigation-selected')).length) {
-				$('<div class="easy-navigation-peekable"></div>')
-					.append('<div class="easy-navigation-peeked-message"><span class="easy-navigation-subtle">Referenced message</span>' + text + '</div>')
-					.css({
-						'left': reply.offset().left + 'px',
-						'width': reply.outerWidth() + 'px',
-						'opacity': '0.75'
-					})
-					.data('reply', reply.attr('id'))
-					.appendTo(document.body);
-					
-				Navigation.update();
-			}
-		},
-
-		unpeek: function () {
-			$('.easy-navigation-peekable').remove();
-		},
-
 		navigate: function (event) {
-			Navigation.unpeek();
-
 			if (event.ctrlKey && event.which == 40) {
 				$(document).scrollTop($(document).height());
 				$('#input').focus();
@@ -310,8 +258,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					}
 				}
 
-				var monologue = selected.closest('.monologue'),
-					selectedTopOffset = monologue.offset().top,
+				var monologue = selected.closest('.monologue');
+				selectedTopOffset = monologue.offset().top,
 					scrollTopOffset = $(document).scrollTop();
 
 				if (selectedTopOffset < scrollTopOffset) {
@@ -332,34 +280,18 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 				return false;
 			} else {
-				var action = (!event.ctrlKey ? Navigation._actions : $.extend({}, Navigation._actions, Navigation._actions.ctrl))[event.which],
-					message = selected[0].id.replace("message-", ""),
-					parent  = selected.data('info').parent_id,
-					replied,
-					command = action ? action.command : null;
-
+				var command = (!event.ctrlKey ? Navigation._actions : Navigation._actions.ctrl)[event.which],
+					message = selected[0].id.replace("message-", "");
 
 				if (command && !selected.find('.content > .deleted').length) {
 					if (typeof command == 'function') {
 						command = command(selected);
 					}
 
-					if (action.jump) {
-						$('#input').focus();
-					}
+					$('#input').focus();
 
 					if (command == 'reply') {
-						$('#input').val(':' + message + ' ' + $('#input').val().replace(/^:\d+\s*/, ''));
-					} else if (command == 'peek') {
-						if (parent) {
-							if ((replied = $('#message-' + parent + ' > .content')).length) {
-								Navigation.peek(message, replied.html());
-							} else {
-								$.get('/message/' + parent, function(text) {
-									Navigation.peek(message, text);
-								}, 'text');
-							}
-						}
+						$('#input').val(':' + message + ' ');
 					} else {
 						execute(command, [message]);
 					}
@@ -373,27 +305,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		deselect: function () {
 			Navigation._active = false;
-			Navigation.unpeek();
 			$('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
-		},
-
-		update: function() {
-			var peekable = $('body > .easy-navigation-peekable'),
-				reply,
-				scrollTopOffset = $(document).scrollTop(),
-				peekableTopOffset;
-
-			if (peekable.length && (reply = $('#' + peekable.data('reply') + '.easy-navigation-selected')).length) {
-				peekableTopOffset = reply.offset().top - peekable.outerHeight(true) - 3;
-
-				peekable.css({
-						'top': peekableTopOffset + 'px',
-					});
-
-				if (peekableTopOffset < scrollTopOffset) {
-					$(document).scrollTo(peekable);
-				}
-			}
 		}
 	};
 
@@ -866,13 +778,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					}
 				});
 			}
-		},		
-		history: function (id) {
-			validateArgs(1, ["number"]);
-			$("<div>").addClass("gm_room_list").load("/messages/" + id + "/history #content", function () {
-				showNotification(this, 10E3);
-			});
-			return CommandState.SucceededDoClear;
 		}
 	};
 
@@ -891,13 +796,13 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			// $(this).before("<div class='timestamp'>" + id + "</div>");
 
 			if (!$(this).siblings('#id-' + id).length) {
-				// var timestamp = new Date($(this).data().info.time * 1000);
-				// timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
-				// $(this).prev(".timestamp").remove();
+				var timestamp = new Date($(this).data().info.time * 1000);
+				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
+				$(this).prev(".timestamp").remove();
 				$('<div />').insertBefore(this)
-				.text(id)
-				.addClass('timestamp')
-				.attr('id', 'id-' + id);
+					.text(id + ' ' + timestamp)
+					.addClass('timestamp')
+					.attr('id', 'id-' + id);
 			}
 		});
 
@@ -927,7 +832,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		// Persistant highlighting Restoration
 		for (var i = 0; i < highlightStore.items.length; i++) {
-			commands.addhl(oldHighlights[i]);
+			commands.addhl(highlightStore.items[i]);
 		}
 
 		// Bind navigation controls
@@ -935,7 +840,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		$('#input').bindAs(0, 'focus', Navigation.deselect);
 		$(document).bindAs(0, 'click', Navigation.deselect);
 		$(document).bindAs(0, 'keydown', Navigation.navigate);
-		$('.message').livequery(Navigation.update);
 
 		// Injecting Clipboard buttons
 		$('<button />')
@@ -945,7 +849,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			.click(function () {
 				commands.clips();
 			});
-
 
 		$('.message').livequery(function () {
 			var c = this;
@@ -970,104 +873,84 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 			$('<style />').text(styleText).appendTo('head');
 		})( // Ugly brackets!
-			{
-				'.gm_room_list': {
-					'list-style': 'none',
-					'text-align': 'left',
-					'font-size': '11px',
-					'padding': '10px',
-					'margin': '0',
-					'min-width': '540px'
-				},
-				'.gm_room_list li': {
-					'float': 'left',
-					'width': '33%'
-				},
-				'.gm_room_list li a': {
-					'display': 'block',
-					'padding': '4px 8px'
-				},
-				'.gm_room_list li a:hover': {
-					'background-color': '#eee',
-					'text-decoration': 'none'
-				},
-				'.gm_room_list.profile li img': {
-					'margin-right': '4px'
-				},
-				'.clips_list': {
-					'list-style': 'none',
-					'text-align': 'left',
-					'font-size': '11px',
-					'padding': '8px 14px',
-					'margin': '0'
-				},
-				'.clips_list li': {
-					'padding': '8px 20px',
-					'border-bottom': '1px dashed #999',
-					'cursor': 'pointer',
-					'overflow': 'hidden',
-					'position': 'relative'
-				},
-				'.clips_list li:hover': {
-					'background-color': '#efefef'
-				},
-				'.clips_list li div.cl_commands': {
-					'position': 'absolute',
-					'top': '5px',
-					'right': '5px',
-					'display': 'none',
-					'border': '1px solid #ccc'
-				},
-				'.clips_list li:hover div.cl_commands': {
-					'display': 'block'
-				},
-				'.clips_list li div.cl_commands a': {
-					'display': 'inline-block',
-					'padding': '2px 4px 3px',
-					'background-color': '#efefef'
-				},
-				'span.action_clip': {
-					'display': 'inline-block',
-					'height': '11px',
-					'width': '12px',
-					'margin-right': '3px',
-					'padding': '0',
-					'background': 'url("http://sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
-					'cursor': 'pointer'
-				},
-				'#chat-body .monologue.mine .message:hover .meta': {
-					'display': 'inline-block !important'
-				},
-				'#chat-body .monologue.mine .message .meta .vote-count-container': {
-					'display': 'none !important'
-				},
-				'.easy-navigation-selected': {
-					'-moz-border-radius': '4px 4px 4px 4px',
-					'background-color': '#D2F7D0',
-					'border-radius': '4px 4px 4px 4px',
-					'margin-left': '5px',
-					'padding-left': '15px !important'
-				},
-				'.easy-navigation-peekable': {
-					'-moz-border-radius': '4px 4px 4px 4px',
-					'background-color': '#000000',
-					'border-radius': '4px 4px 4px 4px',
-					'color': '#F0F0F0',
-					'margin-top': '5px',
-					'padding-right': '0px !important',
-					'position': 'absolute',
-					'z-index': '4'
-				},
-				'.easy-navigation-peeked-message': {
-					'line-height': '1.5em',
-					'padding': '3px 0px 3px 15px'
-				},
-				'.easy-navigation-subtle': {
-					'color': '#D2F7D0',
-					'display': 'block',
-					'font-size': '10px'
-				}
-			}
-		);
+		{
+		'.gm_room_list': {
+			'list-style': 'none',
+			'text-align': 'left',
+			'font-size': '11px',
+			'padding': '10px',
+			'margin': '0',
+			'min-width': '540px'
+		},
+		'.gm_room_list li': {
+			'float': 'left',
+			'width': '33%'
+		},
+		'.gm_room_list li a': {
+			'display': 'block',
+			'padding': '4px 8px'
+		},
+		'.gm_room_list li a:hover': {
+			'background-color': '#eee',
+			'text-decoration': 'none'
+		},
+		'.gm_room_list.profile li img': {
+			'margin-right': '4px'
+		},
+		'.clips_list': {
+			'list-style': 'none',
+			'text-align': 'left',
+			'font-size': '11px',
+			'padding': '8px 14px',
+			'margin': '0'
+		},
+		'.clips_list li': {
+			'padding': '8px 20px',
+			'border-bottom': '1px dashed #999',
+			'cursor': 'pointer',
+			'overflow': 'hidden',
+			'position': 'relative'
+		},
+		'.clips_list li:hover': {
+			'background-color': '#efefef'
+		},
+		'.clips_list li div.cl_commands': {
+			'position': 'absolute',
+			'top': '5px',
+			'right': '5px',
+			'display': 'none',
+			'border': '1px solid #ccc'
+		},
+		'.clips_list li:hover div.cl_commands': {
+			'display': 'block'
+		},
+		'.clips_list li div.cl_commands a': {
+			'display': 'inline-block',
+			'padding': '2px 4px 3px',
+			'background-color': '#efefef'
+		},
+		'span.action_clip': {
+			'display': 'inline-block',
+			'height': '11px',
+			'width': '12px',
+			'margin-right': '3px',
+			'padding': '0',
+			'background': 'url("http://sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
+			'cursor': 'pointer'
+		},
+		'#chat-body .monologue.mine .message:hover .meta': {
+			'display': 'inline-block !important'
+		},
+		'#chat-body .monologue.mine .message .meta .vote-count-container': {
+			'display': 'none !important'
+		},
+		'.easy-navigation-selected': {
+			'background-color': '#D2F7D0',
+			'margin-left': '5px',
+			'-moz-border-radius': '4px 4px 4px 4px',
+			'padding-left': '15px !important;'
+		}
+
+	   });
 	});
 });
