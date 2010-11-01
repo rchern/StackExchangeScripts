@@ -66,7 +66,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
 * Pseudo-Oneboxes
   * `/ob [url]` will create onebox-like series of messages that attempt to add onebox support for sites not "officially supported"
     * **Vimeo:** Video links will be turned into a preview frame image of the video plus a link to the video in question. *Only the link, not the image, will take you to the video.*
-    * Supported URL formats: 
+    * Supported URL formats:
       * `http://vimeo.com/{video-id}`
       * `http://vimeo.com/channels/{channel-name}#{video-id}`
       * `htt[://vimeo.com/category/{group-name}/videos/{video-id}`
@@ -76,12 +76,12 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
   * `<id>` is the numeric id of a message
 * Clipboard
   * The clipboard is a place to store messages and notes to yourself
-  * `/jot [match]` is used to take down messages or notes. 
+  * `/jot [match]` is used to take down messages or notes.
     * If `[match]` is a number, than the message with that id is taken down into the clipboard,
-      else everything else after `/jot` is stored into the clipboard as a note. 
-    * After jotting down things into the clipboard, an id will be shown. 
+      else everything else after `/jot` is stored into the clipboard as a note.
+    * After jotting down things into the clipboard, an id will be shown.
       This id will be used to refer to the note when pasting or removing the message from the clipboard.
-  * `/clips` will show a list of all messages and notes taken. Clips and also be managed from here. 
+  * `/clips` will show a list of all messages and notes taken. Clips and also be managed from here.
   * `/paste [id]` if a message is pasted, that message will be **quoted**, else a new message with the note's content will be generated
   * `/rmclip [id]` will remove the clip with that id from the clipboard
 * Retry a rate limited message
@@ -96,7 +96,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
     * `R` begins a reply to the selected message
     * `D` removes the selected message
     * `S` stars the selected message
-	* `H` shows the history of the message
+    * `H` shows the history of the message
     * `Right Arrow` edits or begins a reply to the selected message, depending on if you own it
     * `Left Arrow` and `P` display the replied-to message, if the selected message is an explicit reply
 

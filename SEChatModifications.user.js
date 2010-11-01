@@ -211,7 +211,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			'68': {
 				command: 'del',
 				jump: true
-			'72': 'history',
+			},
+			'72': {
+				command: 'history',
+				jump: false
+			},
 			'69': {
 				command: 'edit',
 				jump: true
