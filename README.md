@@ -71,6 +71,9 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
       * `http://vimeo.com/channels/{channel-name}#{video-id}`
       * `htt[://vimeo.com/category/{group-name}/videos/{video-id}`
   * This feature is currently undergoing development so **any suggestions on what other sites to add and feedback on how it works will be very welcome.**
+* View message history
+  * `/history <id>`
+  * `<id>` is the numeric id of a message
 * Clipboard
   * The clipboard is a place to store messages and notes to yourself
   * `/jot [match]` is used to take down messages or notes. 
@@ -93,6 +96,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
     * `R` begins a reply to the selected message
     * `D` removes the selected message
     * `S` stars the selected message
+	* `H` shows the history of the message
     * `Right Arrow` edits or begins a reply to the selected message, depending on if you own it
     * `Left Arrow` and `P` display the replied-to message, if the selected message is an explicit reply
 

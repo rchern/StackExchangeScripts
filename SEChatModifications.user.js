@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name          SE Chat Modifications
+// @name		  SE Chat Modifications
 // @description  A collection of modifications for SE chat rooms
-// @include        http://chat.meta.stackoverflow.com/rooms/*
-// @include        http://chat.stackexchange.com/rooms/*
-// @include        http://chat.stackoverflow.com/rooms/*
-// @include        http://chat.superuser.com/rooms/*
-// @include        http://chat.serverfault.com/rooms/*
-// @include        http://chat.askubuntu.com/rooms/*
-// @author         @rchern
+// @include		http://chat.meta.stackoverflow.com/rooms/*
+// @include		http://chat.stackexchange.com/rooms/*
+// @include		http://chat.stackoverflow.com/rooms/*
+// @include		http://chat.superuser.com/rooms/*
+// @include		http://chat.serverfault.com/rooms/*
+// @include		http://chat.askubuntu.com/rooms/*
+// @author		 @rchern
 // ==/UserScript==
 
 function with_plugin(url, callback) {
@@ -211,7 +211,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			'68': {
 				command: 'del',
 				jump: true
-			},
+			'72': 'history',
 			'69': {
 				command: 'edit',
 				jump: true
@@ -632,8 +632,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 						'target': '_self'
 					}).text(id + " - " + room.attr("title"))
 						.wrap('<li />')
-					.parent()
-					.appendTo(ul);
+						.parent()
+						.appendTo(ul);
 				}
 
 				page.filter(".roomcard").each(processPage);
@@ -747,7 +747,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 								$('<strong />').text(current.display_name).prependTo(anchor);
 
 								$('<img />').attr({
-									src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14',
+									src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14&d=identicon',
 									alt: ''
 								}).prependTo(anchor);
 
@@ -862,6 +862,13 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					}
 				});
 			}
+		},		
+		history: function (id) {
+			validateArgs(1, ["number"]);
+			$("<div>").addClass("gm_room_list").load("/messages/" + id + "/history #content", function () {
+				showNotification(this, 10E3);
+			});
+			return CommandState.SucceededDoClear;
 		}
 	};
 
@@ -877,7 +884,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		// show the message ids on each 
 		$(".message:not(.pending):not(.posted)").livequery(function () {
 			var id = this.id.replace("message-", "");
-			//$(this).before("<div class='timestamp'>" + id + "</div>");
+			// $(this).before("<div class='timestamp'>" + id + "</div>");
 
 			if (!$(this).siblings('#id-' + id).length) {
 				var timestamp = new Date($(this).data().info.time * 1000);
@@ -935,6 +942,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				commands.clips();
 			});
 
+
 		$('.message').livequery(function () {
 			var c = this;
 
@@ -942,6 +950,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				commands.jot(c.id.substring(8));
 			});
 		});
+
 
 		// Style insertion, a la GM_addStyle, but using jQuery CSS syntax
 		(function (style_obj) {
@@ -964,9 +973,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					'font-size': '11px',
 					'padding': '10px',
 					'margin': '0',
-					'column-count': '3',
-					'-moz-column-count': '3',
-					'-webkit-column-count': '3'
+			'min-width': '540px'
+		},
+		'.gm_room_list li': {
+			'float': 'left',
+			'width': '33%'
 				},
 				'.gm_room_list li a': {
 					'display': 'block',
