@@ -206,6 +206,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			'81': 'quote',
 			'82': 'reply',
 			'83': 'star',
+			'72': 'history',
 			'ctrl': {
 				'39': 'quote'
 			}
@@ -778,6 +779,13 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					}
 				});
 			}
+		},		
+		history: function (id) {
+			validateArgs(1, ["number"]);
+			$("<div>").addClass("gm_room_list").load("/messages/" + id + "/history #content", function () {
+				showNotification(this, 10E3);
+			});
+			return CommandState.SucceededDoClear;
 		}
 	};
 
