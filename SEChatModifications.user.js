@@ -223,7 +223,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			'80': {
 				command: 'peek',
 				jump: true
-			}
+			},
 			'81': {
 				command: 'quote',
 				jump: true
@@ -335,7 +335,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				var action = (!event.ctrlKey ? Navigation._actions : $.extend({}, Navigation._actions, Navigation._actions.ctrl))[event.which],
 					message = selected[0].id.replace("message-", ""),
 					parent  = selected.data('info').parent_id,
-					replied = null,
+					replied,
 					command = action ? action.command : null;
 
 
@@ -349,7 +349,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					}
 
 					if (command == 'reply') {
-						$('#input').val(':' + message + ' ');
+						$('#input').val(':' + message + ' ' + $('#input').val().replace(/^:\d+\s*/, ''));
 					} else if (command == 'peek') {
 						if (parent) {
 							if ((replied = $('#message-' + parent + ' > .content')).length) {
@@ -977,11 +977,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					'font-size': '11px',
 					'padding': '10px',
 					'margin': '0',
-			'min-width': '540px'
-		},
-		'.gm_room_list li': {
-			'float': 'left',
-			'width': '33%'
+					'min-width': '540px'
+				},
+				'.gm_room_list li': {
+					'float': 'left',
+					'width': '33%'
 				},
 				'.gm_room_list li a': {
 					'display': 'block',
