@@ -74,7 +74,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
 * Clipboard
   * The clipboard is a place to store messages and notes to yourself
   * `/jot [match]` is used to take down messages or notes. 
-    * If `[match]` is a number, than the message with that id is taken down into the clipboard, 
+    * If `[match]` is a number, than the message with that id is taken down into the clipboard,
       else everything else after `/jot` is stored into the clipboard as a note. 
     * After jotting down things into the clipboard, an id will be shown. 
       This id will be used to refer to the note when pasting or removing the message from the clipboard.
@@ -103,3 +103,4 @@ Provides minor tweaks to StackExchange sites.
 * Turns comment timestamps into links to the comment
   * Will only work if the comment is visible when the page is linked to.
 * Adds audit link to /reputation
+* Adds history link to each question and answer
