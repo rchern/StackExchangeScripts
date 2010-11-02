@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name		  SE Chat Modifications
-// @description  A collection of modifications for SE chat rooms
+// @name		SE Chat Modifications
+// @description	A collection of modifications for SE chat rooms
 // @include		http://chat.meta.stackoverflow.com/rooms/*
 // @include		http://chat.stackexchange.com/rooms/*
 // @include		http://chat.stackoverflow.com/rooms/*
 // @include		http://chat.superuser.com/rooms/*
 // @include		http://chat.serverfault.com/rooms/*
 // @include		http://chat.askubuntu.com/rooms/*
-// @author		 @rchern
+// @author		@rchern
 // ==/UserScript==
 
 function with_plugin(url, callback) {
@@ -198,17 +198,53 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		_active: false,
 
 		_actions: {
-			'39': function (target) {
-				return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
+			'37': {
+				command: 'peek',
+				jump: false
 			},
-			'68': 'del',
-			'69': 'edit',
-			'81': 'quote',
-			'82': 'reply',
-			'83': 'star',
+			'39': {
+				command: function (target) {
+					return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
+				},
+				jump: true
+			},
+			'68': {
+				command: 'del',
+				jump: true
+			},
+			'72': {
+				command: 'history',
+				jump: false
+			},
+			'69': {
+				command: 'edit',
+				jump: true
+			},
+			'80': {
+				command: 'peek',
+				jump: false
+			},
+			'81': {
+				command: 'quote',
+				jump: true
+			},
+			'82': {
+				command: 'reply',
+				jump: true
+			},
+			'83': {
+				command: 'star',
+				jump: true
+			},
 			'ctrl': {
-				'39': 'quote'
+
 			}
+		},
+		
+		deselect: function () {
+			Navigation._active = false;
+			Navigation.unpeek();
+			$('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
 		},
 
 		launch: function (event) {
@@ -225,8 +261,14 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				return false;
 			}
 		},
+		
+		handles: function (key, isCtrl) {
+			return (!isCtrl ? Navigation._actions : $.extend({}, Navigation._actions, Navigation._actions.ctrl))[key];
+		},
 
-		navigate: function (event) {
+		navigate: function (event, n) {
+			Navigation.unpeek();
+			
 			if (event.ctrlKey && event.which == 40) {
 				$(document).scrollTop($(document).height());
 				$('#input').focus();
@@ -237,15 +279,21 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			if (!Navigation._active) {
 				return true;
 			}
+			
+			if (n === 0) {
+				return false;
+			}
 
-			var selected = $('#chat .easy-navigation-selected');
+			var selected = $('#chat .easy-navigation-selected'),
+			    up = event.which == 33 || event.which == 38,
+			    down = event.which == 34 || event.which == 40;
 
-			if (event.which == 38 || event.which == 40) {
+			if (up || down) {
 				if (!selected.length) {
 					selected = $('#chat .message:last').addClass('easy-navigation-selected');
 				} else {
-					var action = event.which == 38 ? 'prev' : 'next',
-						select = event.which == 38 ? 'last' : 'first',
+					var action = up ? 'prev' : 'next',
+						select = up ? 'last' : 'first',
 						sibling = selected[action + 'All']('.message:first');
 
 					if (!sibling.length) {
@@ -278,10 +326,21 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					}
 				}
 
+				if ((event.which == 33 || event.which == 34) && !n) {
+					n = 5;
+				}
+
+				if (n) {
+					Navigation.navigate(event, n - 1);
+				}
+
 				return false;
 			} else {
-				var command = (!event.ctrlKey ? Navigation._actions : Navigation._actions.ctrl)[event.which],
-					message = selected[0].id.replace("message-", "");
+				var action = Navigation.handles(event.which, event.ctrlKey),
+					message = selected[0].id.replace("message-", ""),
+					parent = selected.data('info').parent_id,
+					replied,
+					command = action ? action.command : null;
 
 				if (command && !selected.find('.content > .deleted').length) {
 					if (typeof command == 'function') {
@@ -303,9 +362,50 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 		},
 
-		deselect: function () {
-			Navigation._active = false;
-			$('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
+		peek: function (reply, text) {
+			if ((reply = $('#message-' + reply + '.easy-navigation-selected')).length) {
+				$('<div class="easy-navigation-peekable"></div>')
+					.append('<div class="easy-navigation-peeked-message"><span class="easy-navigation-subtle">Referenced message</span>' + text + '</div>')
+					.css({
+						'left': reply.offset().left + 'px',
+						'width': reply.outerWidth() + 'px',
+						'opacity': '0.8'
+					})
+					.data('reply', reply.attr('id'))
+					.appendTo(document.body);
+					
+				Navigation.update();
+			}
+		},
+		
+		suppress: function (event) {
+			if (Navigation._active && Navigation.handles((event.which < 123 && event.which > 96 ? event.which - 32 : event.which), event.isCtrl)) {
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+		},
+
+		unpeek: function () {
+			$('.easy-navigation-peekable').remove();
+		},
+
+		update: function() {
+			var peekable = $('body > .easy-navigation-peekable'),
+				reply,
+				scrollTopOffset = $(document).scrollTop(),
+				peekableTopOffset;
+
+			if (peekable.length && (reply = $('#' + peekable.data('reply') + '.easy-navigation-selected')).length) {
+				peekableTopOffset = reply.offset().top - peekable.outerHeight(true) - 3;
+
+				peekable.css({
+						'top': peekableTopOffset + 'px',
+					});
+
+				if (peekableTopOffset < scrollTopOffset) {
+					$(document).scrollTo(peekable);
+				}
+			}
 		}
 	};
 
@@ -840,6 +940,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		$('#input').bindAs(0, 'focus', Navigation.deselect);
 		$(document).bindAs(0, 'click', Navigation.deselect);
 		$(document).bindAs(0, 'keydown', Navigation.navigate);
+		$(document).bindAs(0, 'keypress', Navigation.suppress);
+		$('.message').livequery(Navigation.update);
 
 		// Injecting Clipboard buttons
 		$('<button />')
@@ -873,84 +975,107 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 			$('<style />').text(styleText).appendTo('head');
 		})( // Ugly brackets!
-		{
-		'.gm_room_list': {
-			'list-style': 'none',
-			'text-align': 'left',
-			'font-size': '11px',
-			'padding': '10px',
-			'margin': '0',
-			'min-width': '540px'
-		},
-		'.gm_room_list li': {
-			'float': 'left',
-			'width': '33%'
-		},
-		'.gm_room_list li a': {
-			'display': 'block',
-			'padding': '4px 8px'
-		},
-		'.gm_room_list li a:hover': {
-			'background-color': '#eee',
-			'text-decoration': 'none'
-		},
-		'.gm_room_list.profile li img': {
-			'margin-right': '4px'
-		},
-		'.clips_list': {
-			'list-style': 'none',
-			'text-align': 'left',
-			'font-size': '11px',
-			'padding': '8px 14px',
-			'margin': '0'
-		},
-		'.clips_list li': {
-			'padding': '8px 20px',
-			'border-bottom': '1px dashed #999',
-			'cursor': 'pointer',
-			'overflow': 'hidden',
-			'position': 'relative'
-		},
-		'.clips_list li:hover': {
-			'background-color': '#efefef'
-		},
-		'.clips_list li div.cl_commands': {
-			'position': 'absolute',
-			'top': '5px',
-			'right': '5px',
-			'display': 'none',
-			'border': '1px solid #ccc'
-		},
-		'.clips_list li:hover div.cl_commands': {
-			'display': 'block'
-		},
-		'.clips_list li div.cl_commands a': {
-			'display': 'inline-block',
-			'padding': '2px 4px 3px',
-			'background-color': '#efefef'
-		},
-		'span.action_clip': {
-			'display': 'inline-block',
-			'height': '11px',
-			'width': '12px',
-			'margin-right': '3px',
-			'padding': '0',
-			'background': 'url("http://sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
-			'cursor': 'pointer'
-		},
-		'#chat-body .monologue.mine .message:hover .meta': {
-			'display': 'inline-block !important'
-		},
-		'#chat-body .monologue.mine .message .meta .vote-count-container': {
-			'display': 'none !important'
-		},
-		'.easy-navigation-selected': {
-			'background-color': '#D2F7D0',
-			'margin-left': '5px',
-			'-moz-border-radius': '4px 4px 4px 4px',
-			'padding-left': '15px !important;'
-		}
-
-	   });
+			{
+				'.gm_room_list': {
+					'list-style': 'none',
+					'text-align': 'left',
+					'font-size': '11px',
+					'padding': '10px',
+					'margin': '0',
+					'min-width': '540px'
+				},
+				'.gm_room_list li': {
+					'float': 'left',
+					'width': '33%'
+				},
+				'.gm_room_list li a': {
+					'display': 'block',
+					'padding': '4px 8px'
+				},
+				'.gm_room_list li a:hover': {
+					'background-color': '#eee',
+					'text-decoration': 'none'
+				},
+				'.gm_room_list.profile li img': {
+					'margin-right': '4px'
+				},
+				'.clips_list': {
+					'list-style': 'none',
+					'text-align': 'left',
+					'font-size': '11px',
+					'padding': '8px 14px',
+					'margin': '0'
+				},
+				'.clips_list li': {
+					'padding': '8px 20px',
+					'border-bottom': '1px dashed #999',
+					'cursor': 'pointer',
+					'overflow': 'hidden',
+					'position': 'relative'
+				},
+				'.clips_list li:hover': {
+					'background-color': '#efefef'
+				},
+				'.clips_list li div.cl_commands': {
+					'position': 'absolute',
+					'top': '5px',
+					'right': '5px',
+					'display': 'none',
+					'border': '1px solid #ccc'
+				},
+				'.clips_list li:hover div.cl_commands': {
+					'display': 'block'
+				},
+				'.clips_list li div.cl_commands a': {
+					'display': 'inline-block',
+					'padding': '2px 4px 3px',
+					'background-color': '#efefef'
+				},
+				'span.action_clip': {
+					'display': 'inline-block',
+					'height': '11px',
+					'width': '12px',
+					'margin-right': '3px',
+					'padding': '0',
+					'background': 'url("http://or.sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
+					'cursor': 'pointer'
+				},
+				'#chat-body .monologue.mine .message:hover .meta': {
+					'display': 'inline-block !important'
+				},
+				'#chat-body .monologue.mine .message .meta .vote-count-container': {
+					'display': 'none !important'
+				},
+				'.easy-navigation-selected': {
+					'-moz-border-radius': '4px 4px 4px 4px',
+					'background-color': '#D2F7D0',
+					'border-radius': '4px 4px 4px 4px',
+					'margin-left': '5px',
+					'padding-left': '15px !important'
+				},
+				'.easy-navigation-peekable': {
+					'-moz-border-radius': '4px 4px 4px 4px',
+					'background-color': '#000000',
+					'border-radius': '4px 4px 4px 4px',
+					'color': '#F0F0F0',
+					'margin-top': '5px',
+					'padding-right': '0px !important',
+					'position': 'absolute',
+					'z-index': '4'
+				},
+				'.easy-navigation-peeked-message': {
+					'line-height': '1.5em',
+					'padding': '3px 0px 3px 15px'
+				},
+				'.easy-navigation-peeked-message .mention': {
+					'color': '#000000'
+				},
+				'.easy-navigation-subtle': {
+					'color': '#D2F7D0',
+					'display': 'block',
+					'font-size': '10px'
+				}
+			}
+		);
 	});
 });
