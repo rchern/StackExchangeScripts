@@ -266,7 +266,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			return (!isCtrl ? Navigation._actions : $.extend({}, Navigation._actions, Navigation._actions.ctrl))[key];
 		},
 
-		navigate: function (event) {
+		navigate: function (event, n) {
 			Navigation.unpeek();
 
 			if (event.ctrlKey && event.which == 40) {
@@ -279,15 +279,21 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			if (!Navigation._active) {
 				return true;
 			}
+			
+			if (n === 0) {
+				return false;
+			}
 
-			var selected = $('#chat .easy-navigation-selected');
+			var selected = $('#chat .easy-navigation-selected'),
+			    up = event.which == 33 || event.which == 38,
+			    down = event.which == 34 || event.which == 40;
 
-			if (event.which == 38 || event.which == 40) {
+			if (up || down) {
 				if (!selected.length) {
 					selected = $('#chat .message:last').addClass('easy-navigation-selected');
 				} else {
-					var action = event.which == 38 ? 'prev' : 'next',
-						select = event.which == 38 ? 'last' : 'first',
+					var action = up ? 'prev' : 'next',
+						select = up ? 'last' : 'first',
 						sibling = selected[action + 'All']('.message:first');
 
 					if (!sibling.length) {
@@ -318,6 +324,14 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 						$(document).scrollTop(scrollPosition);
 					}
+				}
+
+				if ((event.which == 33 || event.which == 34) && !n) {
+					n = 5;
+				}
+
+				if (n) {
+					Navigation.navigate(event, n - 1);
 				}
 
 				return false;

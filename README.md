@@ -90,6 +90,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
   * `Ctrl` + `Up Arrow` begins navigation
   * `Ctrl` + `Down Arrow` cancels navigation and jumps to message input
   * `Up Arrow` and `Down Arrow` navigate between messages
+    * `Page Up` and `Page Down` navigate more quickly (5 messages at a time)
   * On a selected message:
     * `Q` quotes the selected message
     * `E` edits the selected message
