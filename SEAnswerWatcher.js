@@ -8,6 +8,19 @@
 // @exclude        */flair/*
 // ==/UserScript==
 
+Date.prototype.pad = function(n){
+	return n < 10 ? '0' + n : n;
+}
+
+if (!Date.prototype.toISOString) Date.prototype.toISOString = function() {
+	return this.getUTCFullYear() + '-'
+		+ pad(this.getUTCMonth() + 1) +'-'
+		+ pad(this.getUTCDate()) + 'T'
+		+ pad(this.getUTCHours()) + ':'
+		+ pad(this.getUTCMinutes()) + ':'
+		+ pad(this.getUTCSeconds()) + 'Z';
+}
+
 function with_plugin(url, callback) {
 	var script = document.createElement("script");
 	script.setAttribute("src", url);
@@ -22,8 +35,6 @@ function with_plugin(url, callback) {
 }
 
 with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
-	var api = 'http://api.' + window.location.hostname + '/1.0/'
-	
 	if(localStorage['answatch:lastUpdate'] === null){
 		localStorage['answatch:lastUpdate'] = 0;
 	}
@@ -32,14 +43,17 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 		localStorage['answatch:lastViewed'] = 0;
 	}
 	
-	$.ajaxSetup({
-		cache: true, 
-		dataType: 'jsonp', 
-		jsonp: 'jsonp', 
-		data: {
-			api: 'c32K0emmkkeUirrc7hK_lg'
-		}
-	});
+	function apiAjax(route, options){
+		return $.ajax($.extend(true, {
+			url: 'http://api.' + window.location.hostname + '/1.0/' + route,
+			cache: true, 
+			dataType: 'jsonp', 
+			jsonp: 'jsonp', 
+			data: {
+				api: 'c32K0emmkkeUirrc7hK_lg'
+			}
+		}, options));
+	}
 	
 	// Build structure to store new answers and changes
 	var Answers = {
@@ -48,8 +62,7 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 			
 			if(!Answers.getOne(id)){
 			
-				$.ajax({
-					url: api + 'answers/' + id, 
+				apiAjax('answers/' + id, {
 					success: function(data){
 						// Bail if answer not found
 						if(data.total !== 1) { 
@@ -64,7 +77,6 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 						}
 					}
 				});
-				
 			}
 		}, 
 		
@@ -72,8 +84,7 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 			var answers = Answers.getAll();
 			
 			if(!Answers.getOne(id)){
-				$.ajax({
-					url: api + 'questions/' + id, 
+				apiAjax('questions/' + id, {
 					success: function(data){
 						if(data.total !== 1){
 							return false;
@@ -188,8 +199,7 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 		var id = Answers.serialize();
 		
 		if(id){
-			$.ajax({
-				url: api + 'revisions/' + id, 
+			apiAjax('revisions/' + id, {
 				data: {
 					fromdate: old
 				},
@@ -203,7 +213,7 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 						
 						$('<a />').text(rev.user.display_name).attr('href', userUrl).prependTo(t);
 						$('<a />').text(Answers.getOne(post).title + ' ').attr('href', '/q/' + post).appendTo(t);
-						$('<span />').text(lastEdit.toString()).addClass('ans_time').attr('title', lastEdit.toUTCString()).appendTo(t);
+						$('<span />').text(lastEdit.toString()).addClass('ans_time').attr('title', lastEdit.toISOString()).appendTo(t);
 						
 						Changes.add({
 							title: t.wrap('<div />').parent().html(), 
@@ -216,8 +226,7 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 			});
 			
 			// Check for new comments
-			$.ajax({
-				url: api + 'posts/' + id + '/comments', 
+			apiAjax('posts/' + id + '/comments', {
 				data: {
 					min: old
 				},
@@ -231,7 +240,7 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 						
 						if(c.reply_to_user){
 							t.text(' replied to ');
-							$('<a />').text(c.reply_to_user.display_name).attr('href', '/user/' + c.reply_to_user.user_id);
+							$('<a />').text(c.reply_to_user.display_name).attr('href', '/user/' + c.reply_to_user.user_id).appendTo(t);
 							t.append(' on ');
 						} else {
 							t.text(' commented on ');
@@ -239,7 +248,7 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 						
 						$('<a />').text(c.owner.display_name).attr('href', userUrl).prependTo(t);
 						$('<a />').text(Answers.getOne(post).title + ' ').attr('href', '/q/' + post).appendTo(t);
-						$('<span />').text(lastEdit.toString()).addClass('ans_time').attr('title', lastEdit.toUTCString()).appendTo(t);
+						$('<span />').text(lastEdit.toString()).addClass('ans_time').attr('title', lastEdit.toISOString()).appendTo(t);
 						
 						Changes.add({
 							title: t.wrap('<div />').parent().html(), 
@@ -278,13 +287,15 @@ with_plugin('http://timeago.yarp.com/jquery.timeago.js', function(){
 						content = $('<div />').addClass('siteInfo').appendTo(siteBox), 
 						title = $('<p />').html(changes[i].title).appendTo(content);
 					
+					console.log(title.find('.ans_time').wrap('<div />').parent().html());
 					title.find('.ans_time').timeago();
+					console.log(title.find('.ans_time'));
 					$('<img />').attr('src', changes[i].gravatar).css('margin', 0)
 						.wrap('<a />').parent().attr('href', changes[i].url).addClass('siteFavicon').css('margin-right', 7)
 						.prependTo(siteBox);
 					
 					if(changes[i].content){
-						$('<p />').text(changes[i].content).appendTo(content).css({
+						$('<p />').html(changes[i].content).appendTo(content).css({
 							maxHeight: 24, 
 							overflow: 'hidden'
 						});
