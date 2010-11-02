@@ -222,7 +222,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			},
 			'80': {
 				command: 'peek',
-				jump: true
+				jump: false
 			},
 			'81': {
 				command: 'quote',
@@ -240,6 +240,12 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 			}
 		},
+		
+		deselect: function () {
+			Navigation._active = false;
+			Navigation.unpeek();
+			$('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
+		},
 
 		launch: function (event) {
 			if (event.ctrlKey && event.which == 38) {
@@ -255,25 +261,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				return false;
 			}
 		},
-
-		peek: function (reply, text) {
-			if ((reply = $('#message-' + reply + '.easy-navigation-selected')).length) {
-				$('<div class="easy-navigation-peekable"></div>')
-					.append('<div class="easy-navigation-peeked-message"><span class="easy-navigation-subtle">Referenced message</span>' + text + '</div>')
-					.css({
-						'left': reply.offset().left + 'px',
-						'width': reply.outerWidth() + 'px',
-						'opacity': '0.75'
-					})
-					.data('reply', reply.attr('id'))
-					.appendTo(document.body);
-					
-				Navigation.update();
-			}
-		},
-
-		unpeek: function () {
-			$('.easy-navigation-peekable').remove();
+		
+		handles: function (key, isCtrl) {
+			return (!isCtrl ? Navigation._actions : $.extend({}, Navigation._actions, Navigation._actions.ctrl))[key];
 		},
 
 		navigate: function (event) {
@@ -332,12 +322,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 				return false;
 			} else {
-				var action = (!event.ctrlKey ? Navigation._actions : $.extend({}, Navigation._actions, Navigation._actions.ctrl))[event.which],
+				var action = Navigation.handles(event.which, event.ctrlKey),
 					message = selected[0].id.replace("message-", ""),
 					parent  = selected.data('info').parent_id,
 					replied,
 					command = action ? action.command : null;
-
 
 				if (command && !selected.find('.content > .deleted').length) {
 					if (typeof command == 'function') {
@@ -371,10 +360,31 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 		},
 
-		deselect: function () {
-			Navigation._active = false;
-			Navigation.unpeek();
-			$('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
+		peek: function (reply, text) {
+			if ((reply = $('#message-' + reply + '.easy-navigation-selected')).length) {
+				$('<div class="easy-navigation-peekable"></div>')
+					.append('<div class="easy-navigation-peeked-message"><span class="easy-navigation-subtle">Referenced message</span>' + text + '</div>')
+					.css({
+						'left': reply.offset().left + 'px',
+						'width': reply.outerWidth() + 'px',
+						'opacity': '0.8'
+					})
+					.data('reply', reply.attr('id'))
+					.appendTo(document.body);
+					
+				Navigation.update();
+			}
+		},
+		
+		suppress: function (event) {
+			if (Navigation._active && Navigation.handles((event.which < 123 && event.which > 96 ? event.which - 32 : event.which), event.isCtrl)) {
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+		},
+
+		unpeek: function () {
+			$('.easy-navigation-peekable').remove();
 		},
 
 		update: function() {
@@ -935,6 +945,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		$('#input').bindAs(0, 'focus', Navigation.deselect);
 		$(document).bindAs(0, 'click', Navigation.deselect);
 		$(document).bindAs(0, 'keydown', Navigation.navigate);
+		$(document).bindAs(0, 'keypress', Navigation.suppress);
 		$('.message').livequery(Navigation.update);
 
 		// Injecting Clipboard buttons
@@ -1061,6 +1072,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				'.easy-navigation-peeked-message': {
 					'line-height': '1.5em',
 					'padding': '3px 0px 3px 15px'
+				},
+				'.easy-navigation-peeked-message .mention': {
+					'color': '#000000'
 				},
 				'.easy-navigation-subtle': {
 					'color': '#D2F7D0',
