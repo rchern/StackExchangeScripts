@@ -268,7 +268,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		navigate: function (event, n) {
 			Navigation.unpeek();
-			
+
 			if (event.ctrlKey && event.which == 40) {
 				$(document).scrollTop($(document).height());
 				$('#input').focus();
@@ -306,8 +306,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					}
 				}
 
-				var monologue = selected.closest('.monologue');
-				selectedTopOffset = monologue.offset().top,
+				var monologue = selected.closest('.monologue'),
+					selectedTopOffset = monologue.offset().top,
 					scrollTopOffset = $(document).scrollTop();
 
 				if (selectedTopOffset < scrollTopOffset) {
@@ -338,7 +338,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			} else {
 				var action = Navigation.handles(event.which, event.ctrlKey),
 					message = selected[0].id.replace("message-", ""),
-					parent = selected.data('info').parent_id,
+					parent  = selected.data('info').parent_id,
 					replied,
 					command = action ? action.command : null;
 
@@ -347,10 +347,22 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 						command = command(selected);
 					}
 
-					$('#input').focus();
+					if (action.jump) {
+						$('#input').focus();
+					}
 
 					if (command == 'reply') {
-						$('#input').val(':' + message + ' ');
+						$('#input').val(':' + message + ' ' + $('#input').val().replace(/^:\d+\s*/, ''));
+					} else if (command == 'peek') {
+						if (parent) {
+							if ((replied = $('#message-' + parent + ' > .content')).length) {
+								Navigation.peek(message, replied.html());
+							} else {
+								$.get('/message/' + parent, function(text) {
+									Navigation.peek(message, text);
+								}, 'text');
+							}
+						}
 					} else {
 						execute(command, [message]);
 					}
@@ -878,6 +890,13 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					}
 				});
 			}
+		},		
+		history: function (id) {
+			validateArgs(1, ["number"]);
+			$("<div>").addClass("gm_room_list").load("/messages/" + id + "/history #content", function () {
+				showNotification(this, 10E3);
+			});
+			return CommandState.SucceededDoClear;
 		}
 	};
 
@@ -893,16 +912,15 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		// show the message ids on each 
 		$(".message:not(.pending):not(.posted)").livequery(function () {
 			var id = this.id.replace("message-", "");
-			// $(this).before("<div class='timestamp'>" + id + "</div>");
-
+			
 			if (!$(this).siblings('#id-' + id).length) {
 				var timestamp = new Date($(this).data().info.time * 1000);
 				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
 				$(this).prev(".timestamp").remove();
 				$('<div />').insertBefore(this)
-					.text(id + ' ' + timestamp)
-					.addClass('timestamp')
-					.attr('id', 'id-' + id);
+				.text(id + " " + timestamp)
+				.addClass('timestamp')
+				.attr('id', 'id-' + id);
 			}
 		});
 
@@ -952,6 +970,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				commands.clips();
 			});
 
+
 		$('.message').livequery(function () {
 			var c = this;
 
@@ -974,7 +993,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 
 			$('<style />').text(styleText).appendTo('head');
-		})( // Ugly brackets!
+		})(
 			{
 				'.gm_room_list': {
 					'list-style': 'none',
