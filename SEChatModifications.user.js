@@ -469,6 +469,25 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		}
 	}, 2500);
 
+	//factor out highlighting stuff to avoid repeating myself
+	function getHighlightSelector(match) {
+	if (isNumber(match)) {
+		return Selectors.getMessage(match);
+	} else {
+		return Selectors.getSignature(match);
+	}
+	}
+	function addhl(match) {
+		var selector = getHighlightSelector(match);
+		$(selector).livequery(function () {
+			$(this).addClass("highlight");
+		});
+	}
+	function delhl(match) {
+		var selector = getHighlightSelector(match);
+		$(selector).expire().removeClass("highlight");
+	}
+  
 	function createClipItem(index, room, display, hide) {
 		var html = index + '. <em>' + room + '</em>';
 
@@ -572,55 +591,39 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			$("#sayit-button").click();
 			return CommandState.SucceededDoClear;
 		},
-		addhl: function (match) {
-			match = $.makeArray(match).join(" ");
-			var selector;
-			if (isNumber(match)) {
-				selector = Selectors.getMessage(match);
-			} else {
-				selector = Selectors.getSignature(match);
-			}
-
-			highlightStore.add(match);
-			$(selector).livequery(function () {
-				$(this).addClass("highlight");
-			});
-			return CommandState.SucceededDoClear;
-		},
-		delhl: function (match) {
-			match = $.makeArray(match).join(" ");
-			var selector;
-			if (isNumber(match)) {
-				selector = Selectors.getMessage(match);
-			} else {
-				selector = Selectors.getSignature(match);
-			}
-			highlightStore.remove(match);
-			$(selector).expire().removeClass("highlight");
-			return CommandState.SucceededDoClear;
-		},
-		highlights: function () {
-			validateArgs(0);
-			var ul = $('<ul />').addClass('gm_room_list');
-
-			if (highlightStore.items.length > 0) {
-				for (var i = 0; i < highlightStore.items.length; i++) {
-					(function (current) {
-						$('<a />').click(function () {
-							$('#input').val('/delhl ' + current).focus();
-							return false;
-						}).attr('href', '#')
-							.text(current)
-							.wrap('<li />')
-							.parent()
-							.appendTo(ul);
-					})(highlightStore.items[i]);
+		hl: function (match) {
+			if(match == undefined) {  //no parameters = show list
+				var ul = $('<ul />').addClass('gm_room_list');
+	
+				if (highlightStore.items.length > 0) {
+					for (var i = 0; i < highlightStore.items.length; i++) {
+						(function (current) {
+							$('<a />').click(function () {
+								$('#input').val('/hl ' + current).focus();
+								return false;
+							}).attr('href', '#')
+								.text(current)
+								.wrap('<li />')
+								.parent()
+								.appendTo(ul);
+						})(highlightStore.items[i]);
+					}
+				} else {
+					ul = $('<p />').text('Currently there are no highlighted users or messages');
 				}
-			} else {
-				ul = $('<p />').text('Currently there are no highlighted users or messages');
+	
+				showNotification(ul, 10E3);
+			} else { //if already in list, remove - else add
+				match = $.makeArray(match).join(" ");
+				if($.inArray(match, highlightStore.items) >= 0) {
+					highlightStore.remove(match);
+					delhl(match);
+				} else {
+					highlightStore.add(match);
+					addhl(match);
+				}
 			}
 
-			showNotification(ul, 10E3);
 			return CommandState.SucceededDoClear;
 		},
 		last: function (match) {
@@ -968,9 +971,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		var e = input.data("events").keydown; e.unshift(e.pop());
 
-		// Persistant highlighting Restoration
+		// Persistant highlighting Restoration - code duplicated from command.hl (previously used addhl)
 		for (var i = 0; i < highlightStore.items.length; i++) {
-			commands.addhl(highlightStore.items[i]);
+			addhl(highlightStore.items[i]);
 		}
 
 		// Bind navigation controls
