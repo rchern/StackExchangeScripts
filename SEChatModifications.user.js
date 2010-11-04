@@ -285,8 +285,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 
 			var selected = $('#chat .easy-navigation-selected'),
-			    up = event.which == 33 || event.which == 38,
-			    down = event.which == 34 || event.which == 40;
+				up = event.which == 33 || event.which == 38,
+				down = event.which == 34 || event.which == 40;
 
 			if (up || down) {
 				if (!selected.length) {
@@ -928,15 +928,35 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		var input = $("#input");
 		input.keydown(function (evt) {
 			if (evt.which == 13 && input.val().substring(0, 1) == "/") {
-				var args = input.val().split(" ");
-				var cmd = args[0].substring(1);
-				args = Array.prototype.slice.call(args, 1);
-				var returnVal = false;
-				returnVal = execute(cmd, args);
-				if (returnVal == CommandState.SucceededDoClear) {
-					input.val("");
-				}
-				if (returnVal != CommandState.NotFound) {
+				if(input.val().substring(1, 2) == "/") { //double slash to escape commands
+					input.val(input.val().substring(1));  //remove the escaping slash
+				} else {
+					var args = input.val().split(" ");
+					var cmd = args[0].substring(1);
+					args = Array.prototype.slice.call(args, 1);
+					var returnVal = false;
+					returnVal = execute(cmd, args);
+					if (returnVal == CommandState.SucceededDoClear) {
+						input.val("");
+					}
+					if (returnVal == CommandState.NotFound) {
+						var ul = $('<ul />').addClass('gm_room_list');
+						for (var i in commands) {
+							(function (current) {
+							$('<a />').click(function () {
+								$('#input').val('/' + current).focus();
+								return false;
+							}).attr('href', '#')
+							  .text(current)
+							  .wrap('<li />')
+							  .parent()
+							  .appendTo(ul);
+							})(i);
+						}
+						ul = $(ul).before($('<span/>').text('Unknown command, try again, or use // to escape commands.'));
+						showNotification(ul, 10E3);
+					}
+					//Prevent propagation whether command is found or not
 					evt.preventDefault();
 					evt.stopImmediatePropagation();
 					evt.stopPropagation();
