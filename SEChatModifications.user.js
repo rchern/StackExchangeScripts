@@ -900,6 +900,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				showNotification(this, 10E3);
 			});
 			return CommandState.SucceededDoClear;
+		},
+		update: function () {
+			validateArgs(0);
+			window.location = "http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js";
+			return CommandState.SucceededDoClear;
 		}
 	};
 
