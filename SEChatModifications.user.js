@@ -710,7 +710,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			} else {
 				validateArgs(1, ["number"]);
 			}
-			var elements = $(Selectors.getMessage(id) + ".action-link").click().closest(".message").find(".delete").click();
+			var elements = $(Selectors.getMessage(id) + " .action-link").click().closest(".message").find(".delete").click();
 			if (elements.length !== 1) {
 				throw new Error("Unable to delete message.");
 			}
@@ -736,7 +736,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		},
 		profile: function () {
 			match = $.makeArray(arguments).slice(1).join(" ");
-			var url = matchSite(arguments[0], 'api.') + '/1.0/users',
+			var url = matchSite(arguments[0], 'api.') + '/1.0/users/',
 				currentSite = matchSite(arguments[0]);
 
 			$.ajax({
@@ -750,29 +750,89 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				cache: true,
 				success: function (data) {
 					var response = '';
-
-					if (data.total > 50) {
-						response = $('<p />').text('There are too many users that match your search.');
-					} else if (data.total === 0) {
+					
+					function buildOb(data){
+						var ob = $('<div />').css({
+								textAlign: 'left', 
+								padding: '10px 20px 20px', 
+								overflow: 'hidden'
+							}), 
+							userInfo = $('<div />').css('float', 'left').appendTo(ob), 
+							title = $('<div />').text(', ' + data.location).appendTo(userInfo), 
+							stat = $('<div />').appendTo(userInfo), 
+							name = data.display_name + (data.user_type === 'moderator' ? ' ♦' : '');
+						
+						$('<a />').attr('href', currentSite + '/users/' + data.user_id)
+							.addClass('ob-user-username')
+							.text(name)
+							.prependTo(title);
+						
+						// repNumber: Chat function for displaying rep - adds in k for 10k+ reps
+						$('<span />').addClass('reputation-score').text(repNumber(data.reputation)).appendTo(stat);
+						
+						$('<img />').css({
+							float: 'left', 
+							marginRight: 10
+						}).attr({
+							src: 'http://www.gravatar.com/avatar/' + data.email_hash + '?s=64&d=identicon', 
+							alt: ''
+						}).prependTo(ob);
+						
+						$.ajax({
+							'url': url +  data.user_id + '/tags', 
+							dataType: 'jsonp',
+							jsonp: 'jsonp',
+							data: {
+								pagesize: 8
+							},
+							cache: true,
+							success: function (data) {
+								var wrapper = $('<div />').appendTo(userInfo).css('margin-top', 4);
+								for(var i = 0; i < data.tags.length; i++){
+									var outer = $('<a />')
+										.attr('href', currentSite + '/tagged/' + data.tags[i].name)
+										.appendTo(wrapper).css('text-decoration', 'none');
+										
+									$('<span />')
+										.addClass('ob-user-tag')
+										.text(data.tags[i].name)
+										.appendTo(outer)
+										.css({
+											borderStyle: 'solid', 
+											marginRight: 5
+										});
+								}
+							}
+						});
+						
+						var badgeN = 1;
+						for(var i in data.badge_counts){
+							$('<span />').addClass('badge' + badgeN++).appendTo(stat);
+							$('<span />').addClass('badgecount').text(data.badge_counts[i]).appendTo(stat);
+						}
+						
+						return ob;
+					}
+					
+					if (data.total === 0) {
 						response = $('<p />').text('There are no user that match your search');
 					} else if (data.total === 1) {
 						$('#input').val(currentSite + '/users/' + data.users[0].user_id);
-						$('#sayit-button').click();
+						response = buildOb(data.users[0]);
 					} else {
 						response = $('<ul />').addClass('gm_room_list profile');
-
+						
 						for (var i = 0; i < data.users.length; i++) {
 							(function (current) {
 								var anchor = $('<a />').click(function () {
 									$('#input').val(currentSite + '/users/' + current.user_id);
-									$('#sayit-button').click();
-
+									showNotification(buildOb(current), 10E3);
 									return false;
 								}).attr('href', '#')
 									.text(' ' + current.reputation)
 									.wrap('<li />');
 
-								$('<strong />').text(current.display_name).prependTo(anchor);
+								$('<strong />').text(current.display_name + (current.user_type === 'moderator' ? ' ♦' : '')).prependTo(anchor);
 
 								$('<img />').attr({
 									src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14&d=identicon',
@@ -781,6 +841,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 								anchor.parent().appendTo(response);
 							})(data.users[i]);
+						}
+						
+						if(data.total > 50){
+							$('<li />').append($('<h3 />').text('Your query returned too many results. Currently showing the top 50 sorted by reputation')).prependTo(response);
 						}
 					}
 
@@ -856,7 +920,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		ob: function (url) {
 			validateArgs(1, ['string']);
-
 			url = url.replace(/https?:\/\/(www.)?/, '');
 
 			if (url.indexOf('vimeo.com') > -1) {
@@ -918,9 +981,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
 				$(this).prev(".timestamp").remove();
 				$('<div />').insertBefore(this)
-				.text(id + " " + timestamp)
-				.addClass('timestamp')
-				.attr('id', 'id-' + id);
+					.text(id + ' ' + timestamp)
+					.addClass('timestamp')
+					.attr('id', 'id-' + id);
 			}
 		});
 
