@@ -1057,7 +1057,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					'width': '12px',
 					'margin-right': '3px',
 					'padding': '0',
-					'background': 'url("http://sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
+					'background': '1px 0px url("http://or.sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
 					'cursor': 'pointer'
 				},
 				'#chat-body .monologue.mine .message:hover .meta': {
@@ -1065,6 +1065,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				},
 				'#chat-body .monologue.mine .message .meta .vote-count-container': {
 					'display': 'none !important'
+				},
+				'#chat-body .monologue.mine .message .meta .action_clip': {
+					'margin-right': '0px;'
 				},
 				'.easy-navigation-selected': {
 					'-moz-border-radius': '4px 4px 4px 4px',
