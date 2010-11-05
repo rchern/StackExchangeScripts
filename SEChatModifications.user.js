@@ -285,8 +285,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 
 			var selected = $('#chat .easy-navigation-selected'),
-			    up = event.which == 33 || event.which == 38,
-			    down = event.which == 34 || event.which == 40;
+				up = event.which == 33 || event.which == 38,
+				down = event.which == 34 || event.which == 40;
 
 			if (up || down) {
 				if (!selected.length) {
@@ -469,6 +469,25 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		}
 	}, 2500);
 
+	//factor out highlighting stuff to avoid repeating myself
+	function getHighlightSelector(match) {
+	if (isNumber(match)) {
+		return Selectors.getMessage(match);
+	} else {
+		return Selectors.getSignature(match);
+	}
+	}
+	function addhl(match) {
+		var selector = getHighlightSelector(match);
+		$(selector).livequery(function () {
+			$(this).addClass("highlight");
+		});
+	}
+	function delhl(match) {
+		var selector = getHighlightSelector(match);
+		$(selector).expire().removeClass("highlight");
+	}
+  
 	function createClipItem(index, room, display, hide) {
 		var html = index + '. <em>' + room + '</em>';
 
@@ -572,55 +591,39 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			$("#sayit-button").click();
 			return CommandState.SucceededDoClear;
 		},
-		addhl: function (match) {
-			match = $.makeArray(match).join(" ");
-			var selector;
-			if (isNumber(match)) {
-				selector = Selectors.getMessage(match);
-			} else {
-				selector = Selectors.getSignature(match);
-			}
-
-			highlightStore.add(match);
-			$(selector).livequery(function () {
-				$(this).addClass("highlight");
-			});
-			return CommandState.SucceededDoClear;
-		},
-		delhl: function (match) {
-			match = $.makeArray(match).join(" ");
-			var selector;
-			if (isNumber(match)) {
-				selector = Selectors.getMessage(match);
-			} else {
-				selector = Selectors.getSignature(match);
-			}
-			highlightStore.remove(match);
-			$(selector).expire().removeClass("highlight");
-			return CommandState.SucceededDoClear;
-		},
-		highlights: function () {
-			validateArgs(0);
-			var ul = $('<ul />').addClass('gm_room_list');
-
-			if (highlightStore.items.length > 0) {
-				for (var i = 0; i < highlightStore.items.length; i++) {
-					(function (current) {
-						$('<a />').click(function () {
-							$('#input').val('/delhl ' + current).focus();
-							return false;
-						}).attr('href', '#')
-							.text(current)
-							.wrap('<li />')
-							.parent()
-							.appendTo(ul);
-					})(highlightStore.items[i]);
+		hl: function (match) {
+			if(match == undefined) {  //no parameters = show list
+				var ul = $('<ul />').addClass('gm_room_list');
+	
+				if (highlightStore.items.length > 0) {
+					for (var i = 0; i < highlightStore.items.length; i++) {
+						(function (current) {
+							$('<a />').click(function () {
+								$('#input').val('/hl ' + current).focus();
+								return false;
+							}).attr('href', '#')
+								.text(current)
+								.wrap('<li />')
+								.parent()
+								.appendTo(ul);
+						})(highlightStore.items[i]);
+					}
+				} else {
+					ul = $('<p />').text('Currently there are no highlighted users or messages');
 				}
-			} else {
-				ul = $('<p />').text('Currently there are no highlighted users or messages');
+	
+				showNotification(ul, 10E3);
+			} else { //if already in list, remove - else add
+				match = $.makeArray(match).join(" ");
+				if($.inArray(match, highlightStore.items) >= 0) {
+					highlightStore.remove(match);
+					delhl(match);
+				} else {
+					highlightStore.add(match);
+					addhl(match);
+				}
 			}
 
-			showNotification(ul, 10E3);
 			return CommandState.SucceededDoClear;
 		},
 		last: function (match) {
@@ -960,6 +963,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				showNotification(this, 10E3);
 			});
 			return CommandState.SucceededDoClear;
+		},
+		update: function () {
+			validateArgs(0);
+			window.location = "http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js";
+			return CommandState.SucceededDoClear;
 		}
 	};
 
@@ -991,15 +999,35 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		var input = $("#input");
 		input.keydown(function (evt) {
 			if (evt.which == 13 && input.val().substring(0, 1) == "/") {
-				var args = input.val().split(" ");
-				var cmd = args[0].substring(1);
-				args = Array.prototype.slice.call(args, 1);
-				var returnVal = false;
-				returnVal = execute(cmd, args);
-				if (returnVal == CommandState.SucceededDoClear) {
-					input.val("");
-				}
-				if (returnVal != CommandState.NotFound) {
+				if(input.val().substring(1, 2) == "/") { //double slash to escape commands
+					input.val(input.val().substring(1));  //remove the escaping slash
+				} else {
+					var args = input.val().split(" ");
+					var cmd = args[0].substring(1);
+					args = Array.prototype.slice.call(args, 1);
+					var returnVal = false;
+					returnVal = execute(cmd, args);
+					if (returnVal == CommandState.SucceededDoClear) {
+						input.val("");
+					}
+					if (returnVal == CommandState.NotFound) {
+						var ul = $('<ul />').addClass('gm_room_list');
+						for (var i in commands) {
+							(function (current) {
+							$('<a />').click(function () {
+								$('#input').val('/' + current).focus();
+								return false;
+							}).attr('href', '#')
+							  .text(current)
+							  .wrap('<li />')
+							  .parent()
+							  .appendTo(ul);
+							})(i);
+						}
+						ul = $(ul).before($('<span/>').text('Unknown command, try again, or use // to escape commands.'));
+						showNotification(ul, 10E3);
+					}
+					//Prevent propagation whether command is found or not
 					evt.preventDefault();
 					evt.stopImmediatePropagation();
 					evt.stopPropagation();
@@ -1011,9 +1039,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		var e = input.data("events").keydown; e.unshift(e.pop());
 
-		// Persistant highlighting Restoration
+		// Persistant highlighting Restoration - code duplicated from command.hl (previously used addhl)
 		for (var i = 0; i < highlightStore.items.length; i++) {
-			commands.addhl(highlightStore.items[i]);
+			addhl(highlightStore.items[i]);
 		}
 
 		// Bind navigation controls

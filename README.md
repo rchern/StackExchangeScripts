@@ -23,16 +23,12 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
 * /me support
   * `/me <action text>`
   * Wraps `<action text>` in asterisks so that the output will be italic and sends to the room
-* Add a highlight to messages
-  * `/addhl <match>`
+* Toggle highlight on messages
+  * `/hl <match>`
   * `<match>` is the numeric id of a single message, or a (partial) substring of a username
+  * `/hl`
+  * if called with no parameters, shows a clickable list of all highlights 
   * Uses localStorage to persist highlights
-* Remove a highlight from messages
-  * `/delhl <match>`
-  * `<match>` is the numeric id of a single message, or a (partial) substring of a username
-  * `<match>` must be identical to the match used with `/addhl`
-* View all highlights
-  * `/highlights`
 * Scroll to the last message from a user
   * `/last <match>`
   * `<match>` is a (partial) substring of a username
