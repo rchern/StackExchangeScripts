@@ -490,7 +490,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 	function getCommandList() {
 		var ul = $('<ul />').addClass('gm_room_list');
-		for (var i in commands) {
+		var cmds = [];
+		for (var c in commands) cmds.push(c); //convert to array for sort to alphabetical order
+		cmds.sort();
+		for(var i = 0; i < cmds.length; i++) {
 			(function (current) {
 			$('<a />').click(function () {
 				$('#input').val('/' + current).focus();
@@ -500,7 +503,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			  .wrap('<li />')
 			  .parent()
 			  .appendTo(ul);
-			})(i);
+			})(cmds[i]);
 		}
 		return ul;
 	}
