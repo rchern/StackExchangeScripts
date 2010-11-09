@@ -986,13 +986,16 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		},
 		update: function () {
 			validateArgs(0);
-			window.location = "http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js";
+			try {
+				window.location = "http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js";
+			} catch(e) { if(console) console.log(e) } //do nothing, swallow 'Unknown exception 0x805e000a'
 			return CommandState.SucceededDoClear;
 		},
 		help: function () {
 			var ul = getCommandList();
 			ul = $(ul).before($('<span/>').text('List of recognised commands:'));
 			showNotification(ul, 10E3);
+			return CommandState.SucceededDoClear;
 		}
 	};
 
