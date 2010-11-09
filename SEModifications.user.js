@@ -59,12 +59,168 @@ with_jquery(function ($) {
 						+ "/revisions";
 
 				$(this).append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>");
-				
+
 				revisions = null;
 			});
 		}
 
 		// adds an audit link next to your rep in the header that leads to /reputation
 		$("#hlinks-user .reputation-score").parent().after("<a href='/reputation'>(audit)</a>");
+		
+		// add autocomplete to comments
+		$(document).bind('keydown', function(event) {
+			if (!event.shiftKey || event.which != 50)
+				return;
+
+			var target = $(event.target);
+
+			if (target.attr('name') == 'comment' && !target.hasClass('easy-auto-complete')) {
+				var isActive = false,
+					users = [];
+
+				function simplify(name) {
+					return name.clone().find('span').remove().end().text().replace(/\s+/, '');
+				}
+
+				function autocomplete(event) {
+					var self = $(this),
+						text = self.val(),
+						matches,
+						list,
+						selectionIndex;
+
+					if (this.selectionStart != this.selectionEnd || event.which == 9) {
+						return;
+					}
+					
+					selectionIndex = text.indexOf(' ', this.selectionEnd);
+					selectionIndex = selectionIndex == -1 ? text.length : selectionIndex;
+
+					if (isActive = ((matches = text.substring(0, selectionIndex).match(/@([^\s]+)$/))
+						&& (selectionIndex - matches[0].length == text.indexOf('@')))) {
+						(list = self.prev('.easy-auto-complete-matches'))
+							.children()
+							.remove();
+
+						$.each(users, function(index, value) {
+							if (value.toLowerCase().indexOf(matches[1].toLowerCase()) == 0) {
+								$('<li />').css({
+										'display': 'inline-block',
+										'background-color': '#FFFFFF',
+										'padding': '2px 4px 2px 4px',
+										'margin-right': '5px',
+										'cursor': 'pointer',
+										'border': '1px solid #888888',
+										'font-weight': value.toLowerCase() == matches[1].toLowerCase() ? 'bold' : 'normal'
+									})
+									.addClass(value.toLowerCase() == matches[1].toLowerCase() ? 'selected' : '')
+									.text(value)
+									.click(function() {
+										var text = $(this).text(),
+											value = self.val(),
+											box = self.focus()
+												.val(value.replace(/@[^\s]+/, '@' + text))[0];
+
+										box.selectionStart = box.selectionEnd = value.indexOf('@') + text.length + 1;
+										
+										self.keyup();
+
+										return false;
+									})
+									.appendTo(list);
+							} else if (matches[1] < value) {
+								return false;
+							}
+						});
+
+						list.css({
+								'display': 'block',
+								'top': (self.offset().top - list.outerHeight(true)) + 'px',
+								'left': self.offset().left + 'px'
+							});
+					} else {
+						self.prev('.easy-auto-complete-matches')
+							.css({ 'display': 'none' })
+							.children()
+							.remove();
+					}
+				}
+
+				target.addClass('easy-auto-complete')
+					.before('<ul class="easy-auto-complete-matches" />')
+					.prev()
+					.css({
+						'display': 'none',
+						'position': 'absolute',
+						'width': target.width() + 'px',
+						'margin-left': '0px',
+						'margin-bottom': '5px',
+					})
+					.end()
+					.bind('keydown', function(event) {
+						var self = $(this);
+
+						if (isActive && event.which == 9) {
+							var matches = self.prev(),
+								selected = matches.find('.selected'),
+								next = selected.next(),
+								current;
+
+							if (selected.length) {
+								selected.removeClass('selected')
+									.css({ 'font-weight': 'normal' });
+
+								if (next.length) {
+									current = next.addClass('selected')
+										.css({ 'font-weight': 'bold' });
+								}
+							}
+
+							if (!next.length) {
+								current = matches.children()
+									.first()
+									.addClass('selected')
+									.css({ 'font-weight': 'bold' });
+							}
+							
+							if (current && current.length) {
+								var text = current.text(),
+									value = self.val(),
+									box = self.focus()
+										.val(value.replace(/@[^\s]+/, '@' + text))[0];
+
+								box.selectionStart = box.selectionEnd = value.indexOf('@') + text.length + 1;
+							}
+
+							return false;
+						}
+					})
+					.bind('keyup click', autocomplete)
+					.data('_easy-auto-complete-users', users)
+					.closest('.comments')
+					.find('.comment-user')
+					.each(function() {
+						var username = simplify($(this));
+
+						if ($.inArray(username, users) == -1) {
+							users.push(username);
+						}
+					})
+					.closest('#question')
+					.find('.post-signature .user-details')
+					.each(function() {
+						var username = simplify($(this).find('a:first'));
+
+						if ($.inArray(username, users) == -1) {
+							users.push(username);
+						}
+					})
+					.trigger('keypress', function(event) {
+						users.sort();
+						
+						return event;
+					}(event));
+			}
+		});
 	});
 });

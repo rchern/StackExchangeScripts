@@ -110,3 +110,4 @@ Provides minor tweaks to StackExchange sites.
   * Will only work if the comment is visible when the page is linked to.
 * Adds audit link to /reputation
 * Adds history link to each question and answer
+* Adds chat-like autocomplete for comments, in a way (relatively) consistent with [these criteria](http://meta.stackoverflow.com/questions/43019/how-do-comment-replies-work/43020#43020)
