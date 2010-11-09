@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name		  SE Chat Modifications
-// @description  A collection of modifications for SE chat rooms
+// @name		SE Chat Modifications
+// @description	A collection of modifications for SE chat rooms
 // @include		http://chat.meta.stackoverflow.com/rooms/*
 // @include		http://chat.stackexchange.com/rooms/*
 // @include		http://chat.stackoverflow.com/rooms/*
 // @include		http://chat.superuser.com/rooms/*
 // @include		http://chat.serverfault.com/rooms/*
 // @include		http://chat.askubuntu.com/rooms/*
-// @author		 @rchern
+// @author		@rchern
 // ==/UserScript==
 
 function with_plugin(url, callback) {
@@ -285,8 +285,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 
 			var selected = $('#chat .easy-navigation-selected'),
-			    up = event.which == 33 || event.which == 38,
-			    down = event.which == 34 || event.which == 40;
+				up = event.which == 33 || event.which == 38,
+				down = event.which == 34 || event.which == 40;
 
 			if (up || down) {
 				if (!selected.length) {
@@ -469,6 +469,25 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		}
 	}, 2500);
 
+	//factor out highlighting stuff to avoid repeating myself
+	function getHighlightSelector(match) {
+	if (isNumber(match)) {
+		return Selectors.getMessage(match);
+	} else {
+		return Selectors.getSignature(match);
+	}
+	}
+	function addhl(match) {
+		var selector = getHighlightSelector(match);
+		$(selector).livequery(function () {
+			$(this).addClass("highlight");
+		});
+	}
+	function delhl(match) {
+		var selector = getHighlightSelector(match);
+		$(selector).expire().removeClass("highlight");
+	}
+  
 	function createClipItem(index, room, display, hide) {
 		var html = index + '. <em>' + room + '</em>';
 
@@ -572,55 +591,39 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			$("#sayit-button").click();
 			return CommandState.SucceededDoClear;
 		},
-		addhl: function (match) {
-			match = $.makeArray(match).join(" ");
-			var selector;
-			if (isNumber(match)) {
-				selector = Selectors.getMessage(match);
-			} else {
-				selector = Selectors.getSignature(match);
-			}
-
-			highlightStore.add(match);
-			$(selector).livequery(function () {
-				$(this).addClass("highlight");
-			});
-			return CommandState.SucceededDoClear;
-		},
-		delhl: function (match) {
-			match = $.makeArray(match).join(" ");
-			var selector;
-			if (isNumber(match)) {
-				selector = Selectors.getMessage(match);
-			} else {
-				selector = Selectors.getSignature(match);
-			}
-			highlightStore.remove(match);
-			$(selector).expire().removeClass("highlight");
-			return CommandState.SucceededDoClear;
-		},
-		highlights: function () {
-			validateArgs(0);
-			var ul = $('<ul />').addClass('gm_room_list');
-
-			if (highlightStore.items.length > 0) {
-				for (var i = 0; i < highlightStore.items.length; i++) {
-					(function (current) {
-						$('<a />').click(function () {
-							$('#input').val('/delhl ' + current).focus();
-							return false;
-						}).attr('href', '#')
-							.text(current)
-							.wrap('<li />')
-							.parent()
-							.appendTo(ul);
-					})(highlightStore.items[i]);
+		hl: function (match) {
+			if(match == undefined) {  //no parameters = show list
+				var ul = $('<ul />').addClass('gm_room_list');
+	
+				if (highlightStore.items.length > 0) {
+					for (var i = 0; i < highlightStore.items.length; i++) {
+						(function (current) {
+							$('<a />').click(function () {
+								$('#input').val('/hl ' + current).focus();
+								return false;
+							}).attr('href', '#')
+								.text(current)
+								.wrap('<li />')
+								.parent()
+								.appendTo(ul);
+						})(highlightStore.items[i]);
+					}
+				} else {
+					ul = $('<p />').text('Currently there are no highlighted users or messages');
 				}
-			} else {
-				ul = $('<p />').text('Currently there are no highlighted users or messages');
+	
+				showNotification(ul, 10E3);
+			} else { //if already in list, remove - else add
+				match = $.makeArray(match).join(" ");
+				if($.inArray(match, highlightStore.items) >= 0) {
+					highlightStore.remove(match);
+					delhl(match);
+				} else {
+					highlightStore.add(match);
+					addhl(match);
+				}
 			}
 
-			showNotification(ul, 10E3);
 			return CommandState.SucceededDoClear;
 		},
 		last: function (match) {
@@ -710,7 +713,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			} else {
 				validateArgs(1, ["number"]);
 			}
-			var elements = $(Selectors.getMessage(id) + ".action-link").click().closest(".message").find(".delete").click();
+			var elements = $(Selectors.getMessage(id) + " .action-link").click().closest(".message").find(".delete").click();
 			if (elements.length !== 1) {
 				throw new Error("Unable to delete message.");
 			}
@@ -736,7 +739,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		},
 		profile: function () {
 			match = $.makeArray(arguments).slice(1).join(" ");
-			var url = matchSite(arguments[0], 'api.') + '/1.0/users',
+			var url = matchSite(arguments[0], 'api.') + '/1.0/users/',
 				currentSite = matchSite(arguments[0]);
 
 			$.ajax({
@@ -750,29 +753,89 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				cache: true,
 				success: function (data) {
 					var response = '';
-
-					if (data.total > 50) {
-						response = $('<p />').text('There are too many users that match your search.');
-					} else if (data.total === 0) {
+					
+					function buildOb(data){
+						var ob = $('<div />').css({
+								textAlign: 'left', 
+								padding: '10px 20px 20px', 
+								overflow: 'hidden'
+							}), 
+							userInfo = $('<div />').css('float', 'left').appendTo(ob), 
+							title = $('<div />').text(', ' + data.location).appendTo(userInfo), 
+							stat = $('<div />').appendTo(userInfo), 
+							name = data.display_name + (data.user_type === 'moderator' ? ' ♦' : '');
+						
+						$('<a />').attr('href', currentSite + '/users/' + data.user_id)
+							.addClass('ob-user-username')
+							.text(name)
+							.prependTo(title);
+						
+						// repNumber: Chat function for displaying rep - adds in k for 10k+ reps
+						$('<span />').addClass('reputation-score').text(repNumber(data.reputation)).appendTo(stat);
+						
+						$('<img />').css({
+							float: 'left', 
+							marginRight: 10
+						}).attr({
+							src: 'http://www.gravatar.com/avatar/' + data.email_hash + '?s=64&d=identicon', 
+							alt: ''
+						}).prependTo(ob);
+						
+						$.ajax({
+							'url': url +  data.user_id + '/tags', 
+							dataType: 'jsonp',
+							jsonp: 'jsonp',
+							data: {
+								pagesize: 8
+							},
+							cache: true,
+							success: function (data) {
+								var wrapper = $('<div />').appendTo(userInfo).css('margin-top', 4);
+								for(var i = 0; i < data.tags.length; i++){
+									var outer = $('<a />')
+										.attr('href', currentSite + '/tagged/' + data.tags[i].name)
+										.appendTo(wrapper).css('text-decoration', 'none');
+										
+									$('<span />')
+										.addClass('ob-user-tag')
+										.text(data.tags[i].name)
+										.appendTo(outer)
+										.css({
+											borderStyle: 'solid', 
+											marginRight: 5
+										});
+								}
+							}
+						});
+						
+						var badgeN = 1;
+						for(var i in data.badge_counts){
+							$('<span />').addClass('badge' + badgeN++).appendTo(stat);
+							$('<span />').addClass('badgecount').text(data.badge_counts[i]).appendTo(stat);
+						}
+						
+						return ob;
+					}
+					
+					if (data.total === 0) {
 						response = $('<p />').text('There are no user that match your search');
 					} else if (data.total === 1) {
 						$('#input').val(currentSite + '/users/' + data.users[0].user_id);
-						$('#sayit-button').click();
+						response = buildOb(data.users[0]);
 					} else {
 						response = $('<ul />').addClass('gm_room_list profile');
-
+						
 						for (var i = 0; i < data.users.length; i++) {
 							(function (current) {
 								var anchor = $('<a />').click(function () {
 									$('#input').val(currentSite + '/users/' + current.user_id);
-									$('#sayit-button').click();
-
+									showNotification(buildOb(current), 10E3);
 									return false;
 								}).attr('href', '#')
 									.text(' ' + current.reputation)
 									.wrap('<li />');
 
-								$('<strong />').text(current.display_name).prependTo(anchor);
+								$('<strong />').text(current.display_name + (current.user_type === 'moderator' ? ' ♦' : '')).prependTo(anchor);
 
 								$('<img />').attr({
 									src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14&d=identicon',
@@ -781,6 +844,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 								anchor.parent().appendTo(response);
 							})(data.users[i]);
+						}
+						
+						if(data.total > 50){
+							$('<li />').append($('<h3 />').text('Your query returned too many results. Currently showing the top 50 sorted by reputation')).prependTo(response);
 						}
 					}
 
@@ -856,7 +923,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		ob: function (url) {
 			validateArgs(1, ['string']);
-
 			url = url.replace(/https?:\/\/(www.)?/, '');
 
 			if (url.indexOf('vimeo.com') > -1) {
@@ -897,6 +963,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				showNotification(this, 10E3);
 			});
 			return CommandState.SucceededDoClear;
+		},
+		update: function () {
+			validateArgs(0);
+			window.location = "http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js";
+			return CommandState.SucceededDoClear;
 		}
 	};
 
@@ -912,16 +983,15 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		// show the message ids on each 
 		$(".message:not(.pending):not(.posted)").livequery(function () {
 			var id = this.id.replace("message-", "");
-			// $(this).before("<div class='timestamp'>" + id + "</div>");
-
+			
 			if (!$(this).siblings('#id-' + id).length) {
 				var timestamp = new Date($(this).data().info.time * 1000);
 				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
 				$(this).prev(".timestamp").remove();
 				$('<div />').insertBefore(this)
-				.text(id + " " + timestamp)
-				.addClass('timestamp')
-				.attr('id', 'id-' + id);
+					.text(id + ' ' + timestamp)
+					.addClass('timestamp')
+					.attr('id', 'id-' + id);
 			}
 		});
 
@@ -929,15 +999,35 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		var input = $("#input");
 		input.keydown(function (evt) {
 			if (evt.which == 13 && input.val().substring(0, 1) == "/") {
-				var args = input.val().split(" ");
-				var cmd = args[0].substring(1);
-				args = Array.prototype.slice.call(args, 1);
-				var returnVal = false;
-				returnVal = execute(cmd, args);
-				if (returnVal == CommandState.SucceededDoClear) {
-					input.val("");
-				}
-				if (returnVal != CommandState.NotFound) {
+				if(input.val().substring(1, 2) == "/") { //double slash to escape commands
+					input.val(input.val().substring(1));  //remove the escaping slash
+				} else {
+					var args = input.val().split(" ");
+					var cmd = args[0].substring(1);
+					args = Array.prototype.slice.call(args, 1);
+					var returnVal = false;
+					returnVal = execute(cmd, args);
+					if (returnVal == CommandState.SucceededDoClear) {
+						input.val("");
+					}
+					if (returnVal == CommandState.NotFound) {
+						var ul = $('<ul />').addClass('gm_room_list');
+						for (var i in commands) {
+							(function (current) {
+							$('<a />').click(function () {
+								$('#input').val('/' + current).focus();
+								return false;
+							}).attr('href', '#')
+							  .text(current)
+							  .wrap('<li />')
+							  .parent()
+							  .appendTo(ul);
+							})(i);
+						}
+						ul = $(ul).before($('<span/>').text('Unknown command, try again, or use // to escape commands.'));
+						showNotification(ul, 10E3);
+					}
+					//Prevent propagation whether command is found or not
 					evt.preventDefault();
 					evt.stopImmediatePropagation();
 					evt.stopPropagation();
@@ -949,9 +1039,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		var e = input.data("events").keydown; e.unshift(e.pop());
 
-		// Persistant highlighting Restoration
+		// Persistant highlighting Restoration - code duplicated from command.hl (previously used addhl)
 		for (var i = 0; i < highlightStore.items.length; i++) {
-			commands.addhl(oldHighlights[i]);
+			addhl(highlightStore.items[i]);
 		}
 
 		// Bind navigation controls
@@ -994,7 +1084,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 
 			$('<style />').text(styleText).appendTo('head');
-		})( // Ugly brackets!
+		})(
 			{
 				'.gm_room_list': {
 					'list-style': 'none',
