@@ -35,13 +35,6 @@ function with_jquery(f) {
 
 with_jquery(function ($) {
 	$(function () {
-		// make comment timestamps a link to the comment
-		$(".comments tr").each(function () {
-			var commentId = this.id;
-			var href = "<a href='#" + commentId + "'/>";
-			$(".comment-date", this).wrap(href);
-		});
-
 		// add timeline and history links to post menu
 		var questionURL = $("#question-header a").attr("href");
 		if (questionURL) {
@@ -50,18 +43,67 @@ with_jquery(function ($) {
 				revisions = post + "/revisions";
 			$("#question .post-menu").append("<span class='lsep'>|</span><a href='" + timeline + "'>timeline</a>");
 			$(".post-menu").each(function() {
-				if (!revisions)
+				var postLink = $(this).find("a:contains('link'):first").attr("href");
+
+				if (!revisions) {
 					revisions = "/posts"
-						+ $(this).find("a:contains('link'):first")
-							.attr("href")
-							.replace(questionURL, "")
-							.replace(/#.*/, "")
+						+ postLink.replace(questionURL, "").replace(/#.*/, "")
 						+ "/revisions";
+				} else {
+					postLink = questionURL + '#';
+				}
 
 				$(this).append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>");
+				
+				// add comment link to comment date
+				$(this).closest('.answer, #question')
+					.find('.comment')
+					.each(function() {
+						$('.comment-date', this).wrap('<a href="' + postLink.replace(/#.*/, '#' + this.id) + '" />');
+					})
+					.end()
+					.find('.comments-link')
+					.click(function(event) {
+						var self = $(this);
+
+						// This isn't ideal...
+						setTimeout(function() {
+							self.prevAll('.comments')
+								.find('.comment')
+								.each(function() {
+									$('.comment-date', this).wrap('<a href="' + postLink.replace(/#.*/, '#' + this.id) + '" />');
+								});
+						}, 500);
+					});
 
 				revisions = null;
 			});
+		}
+		
+		// try our best to show a linked comment
+		var commentID = location.hash.match(/#(comment-[0-9]+)/),
+			comment;
+
+		if (commentID && !(comment = $(commentID[0])).length) {
+			// comment doesn't exist or it's hidden (more likely)
+			var post = location.pathname;
+				post = post.substring(post.lastIndexOf('/'));
+
+			$((post.match(/[0-9]+/) ? 'answer-' + post : '#question') + ' .comments-link').click();
+
+			// Again, not ideal...
+			setTimeout(function() {
+				var comment;
+
+				if ((comment = $(commentID[0])).length) {
+					$(document).scrollTop(comment.offset().top);
+					comment.css({ 'background-color': $('<span class="newuser" />').css('background-color') })
+						.animate({ 'background-color': $('#question').css('background-color') }, 2000, 'linear');
+				}
+			}, 500);
+		} else if (comment) {
+			comment.css({ 'background-color': $('<span class="newuser" />').css('background-color') })
+				.animate({ 'background-color': $('#question').css('background-color') }, 2000, 'linear');
 		}
 
 		// adds an audit link next to your rep in the header that leads to /reputation
