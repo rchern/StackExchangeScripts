@@ -487,7 +487,27 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		var selector = getHighlightSelector(match);
 		$(selector).expire().removeClass("highlight");
 	}
-  
+
+	function getCommandList() {
+		var ul = $('<ul />').addClass('gm_room_list');
+		var cmds = [];
+		for (var c in commands) cmds.push(c); //convert to array for sort to alphabetical order
+		cmds.sort();
+		for(var i = 0; i < cmds.length; i++) {
+			(function (current) {
+			$('<a />').click(function () {
+				$('#input').val('/' + current).focus();
+				return false;
+			}).attr('href', '#')
+			  .text(current)
+			  .wrap('<li />')
+			  .parent()
+			  .appendTo(ul);
+			})(cmds[i]);
+		}
+		return ul;
+	}
+	
 	function createClipItem(index, room, display, hide) {
 		var html = index + '. <em>' + room + '</em>';
 
@@ -592,7 +612,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			return CommandState.SucceededDoClear;
 		},
 		hl: function (match) {
-			if(match == undefined) {  //no parameters = show list
+			if(typeof match == 'undefined') {  //no parameters = show list
 				var ul = $('<ul />').addClass('gm_room_list');
 	
 				if (highlightStore.items.length > 0) {
@@ -966,7 +986,15 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		},
 		update: function () {
 			validateArgs(0);
-			window.location = "http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js";
+			try {
+				window.location = "http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js";
+			} catch(e) { if(console) console.log(e) } //do nothing, swallow 'Unknown exception 0x805e000a'
+			return CommandState.SucceededDoClear;
+		},
+		help: function () {
+			var ul = getCommandList();
+			ul = $(ul).before($('<span/>').text('List of recognised commands:'));
+			showNotification(ul, 10E3);
 			return CommandState.SucceededDoClear;
 		}
 	};
@@ -1011,19 +1039,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 						input.val("");
 					}
 					if (returnVal == CommandState.NotFound) {
-						var ul = $('<ul />').addClass('gm_room_list');
-						for (var i in commands) {
-							(function (current) {
-							$('<a />').click(function () {
-								$('#input').val('/' + current).focus();
-								return false;
-							}).attr('href', '#')
-							  .text(current)
-							  .wrap('<li />')
-							  .parent()
-							  .appendTo(ul);
-							})(i);
-						}
+						var ul = getCommandList();
 						ul = $(ul).before($('<span/>').text('Unknown command, try again, or use // to escape commands.'));
 						showNotification(ul, 10E3);
 					}
@@ -1039,7 +1055,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		var e = input.data("events").keydown; e.unshift(e.pop());
 
-		// Persistant highlighting Restoration - code duplicated from command.hl (previously used addhl)
+		// Persistant highlighting Restoration
 		for (var i = 0; i < highlightStore.items.length; i++) {
 			addhl(highlightStore.items[i]);
 		}

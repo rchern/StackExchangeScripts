@@ -1,6 +1,8 @@
 ##SEChatModifications
 Provides keyboard shortcuts and other commands via input text reducing the dependency on mouse usage.  Currently the script adds the id to the right of each message and the commands take in this id to identify the selected message.  Keyboard navigation support is also planned.
 
+* View list of all keyboard commands (except navigation)
+  *. `/help`
 * Star a message
   * `/star <id>`
   * `<id>` is the numeric id of a message
