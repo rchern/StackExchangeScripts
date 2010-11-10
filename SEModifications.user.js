@@ -87,9 +87,9 @@ with_jquery(function ($) {
 		if (commentID && !(comment = $(commentID[0])).length) {
 			// comment doesn't exist or it's hidden (more likely)
 			var post = location.pathname;
-				post = post.substring(post.lastIndexOf('/'));
+				post = post.substring(post.lastIndexOf('/') + 1);
 
-			$((post.match(/[0-9]+/) ? 'answer-' + post : '#question') + ' .comments-link').click();
+			$((post.match(/[0-9]+/) ? '#answer-' + post : '#question') + ' .comments-link').click();
 
 			// Again, not ideal...
 			setTimeout(function() {
