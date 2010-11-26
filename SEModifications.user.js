@@ -121,7 +121,7 @@ with_jquery(function ($) {
 					users = [];
 
 				function simplify(name) {
-					return name.clone().find('span').remove().end().text().replace(/\s+/, '');
+					return name.clone().find('span').remove().end().text().replace(/\s+/g, '');
 				}
 
 				function autocomplete(event) {
