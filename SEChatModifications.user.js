@@ -1000,10 +1000,18 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 	};
 
 	$(function () {
+		var input = $("#input")
+		var page = $(document);
+
 		// ctrl+space retry
-		$(document).bindAs(0, 'keydown', function (evt) {
+		page.bindAs(0, 'keydown', function (evt) {
 			if (evt.which == 32 && evt.ctrlKey) {
+				var value = input.val();
+
+				// This apparently removes the input's text
 				$(".message.pending:first a:contains(retry)").click();
+
+				input.val(value);
 
 				return false;
 			}
@@ -1025,7 +1033,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		});
 
 		// handle commands
-		var input = $("#input").bindAs(0, 'keydown', function (evt) {
+		input.bindAs(0, 'keydown', function (evt) {
 			if (evt.which == 13 && input.val().substring(0, 1) == "/") {
 				if(input.val().substring(1, 2) == "/") { //double slash to escape commands
 					input.val(input.val().substring(1));  //remove the escaping slash
@@ -1059,11 +1067,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		}
 
 		// Bind navigation controls
-		$('#input').bindAs(0, 'keydown', Navigation.launch);
-		$('#input').bindAs(0, 'focus', Navigation.deselect);
-		$(document).bindAs(0, 'click', Navigation.deselect);
-		$(document).bindAs(0, 'keydown', Navigation.navigate);
-		$(document).bindAs(0, 'keypress', Navigation.suppress);
+		input.bindAs(0, 'keydown', Navigation.launch);
+		input.bindAs(0, 'focus', Navigation.deselect);
+		page.bindAs(0, 'click', Navigation.deselect);
+		page.bindAs(0, 'keydown', Navigation.navigate);
+		page.bindAs(0, 'keypress', Navigation.suppress);
 		$('.message').livequery(Navigation.update);
 
 		// Injecting Clipboard buttons
