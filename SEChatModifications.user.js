@@ -1001,10 +1001,11 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 	$(function () {
 		// ctrl+space retry
-		$(document).keyup(function (evt) {
+		$(document).bindAs(0, 'keydown', function (evt) {
 			if (evt.which == 32 && evt.ctrlKey) {
 				$(".message.pending:first a:contains(retry)").click();
-				$("#input").val("");
+
+				return false;
 			}
 		});
 
@@ -1024,8 +1025,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		});
 
 		// handle commands
-		var input = $("#input");
-		input.keydown(function (evt) {
+		var input = $("#input").bindAs(0, 'keydown', function (evt) {
 			if (evt.which == 13 && input.val().substring(0, 1) == "/") {
 				if(input.val().substring(1, 2) == "/") { //double slash to escape commands
 					input.val(input.val().substring(1));  //remove the escaping slash
@@ -1052,8 +1052,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				}
 			}
 		});
-
-		var e = input.data("events").keydown; e.unshift(e.pop());
 
 		// Persistant highlighting Restoration
 		for (var i = 0; i < highlightStore.items.length; i++) {
