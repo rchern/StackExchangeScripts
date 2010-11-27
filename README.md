@@ -6,6 +6,9 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
 * Star a message
   * `/star <id>`
   * `<id>` is the numeric id of a message
+* Flag a message
+  * `/start <id>`
+  * `<id>` is the numeric id of a message
 * Quote a message
   * `/quote <id>`
   * `<id>` is the numeric id of a message
@@ -96,6 +99,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
     * `D` removes the selected message
     * `S` stars the selected message
     * `H` shows the history of the message
+    * `F` puts the command to flag a message in the input box
     * `Right Arrow` edits or begins a reply to the selected message, depending on if you own it
     * `Left Arrow` and `P` display the replied-to message, if the selected message is an explicit reply
 

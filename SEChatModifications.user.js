@@ -212,6 +212,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				command: 'del',
 				jump: true
 			},
+			'70': {
+				command: 'flag',
+				jump: true
+			},
 			'72': {
 				command: 'history',
 				jump: false
@@ -363,6 +367,9 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 								}, 'text');
 							}
 						}
+					} else if (command == 'flag') {
+						// Require double-confirmation in a roundabout way...
+						$('#input').val("/flag " + message);
 					} else {
 						execute(command, [message]);
 					}
@@ -561,6 +568,12 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			validateArgs(1, ["number"]);
 			var star = $(Selectors.getMessage(id) + " .stars .img")[0];
 			$(star).click();
+			return CommandState.SucceededDoClear;
+		},
+		flag: function (id) {
+			validateArgs(1, ["number"]);
+			var flag = $(Selectors.getMessage(id) + " .flags .img")[0];
+			$(flag).click();
 			return CommandState.SucceededDoClear;
 		},
 		quote: function (id) {
