@@ -311,23 +311,30 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				}
 
 				var monologue = selected.closest('.monologue'),
-					selectedTopOffset = monologue.offset().top,
-					scrollTopOffset = $(document).scrollTop();
+					messageTop = selected.offset().top,
+					messageHeight = selected.outerHeight(true),
+					messageBottom = messageTop + messageHeight,
+					monologueTop = monologue.offset().top,
+					monologueHeight = monologue.outerHeight(true),
+					monologueBottom = monologueTop + monologueHeight,
+					windowPosition = $(document).scrollTop(),
+					windowHeight = $(window).height() - $('#input-area').outerHeight(true),
+					newPosition = windowPosition;
 
-				if (selectedTopOffset < scrollTopOffset) {
-					$(document).scrollTo(monologue);
-				} else {
-					var selectedBottomOffset = selectedTopOffset + monologue.outerHeight(true),
-						offsetDifference = selectedBottomOffset - $('#input-area').offset().top,
-						scrollPosition = scrollTopOffset + offsetDifference + 5;
+				if (monologueHeight > windowHeight) {
+					console.log("monologueHeight > windowHeight");
+					newPosition = up ? messageBottom - windowHeight : messageTop;
+				} else if (up && monologueTop < windowPosition || down && monologueBottom > windowPosition + windowHeight) {
+					console.log("up && monologueTop < windowPosition || down && monologueBottom > windowPosition + windowHeight");
+					newPosition = up ? monologueTop : monologueBottom - windowHeight;
+				}
 
-					if (offsetDifference > 0) {
-						if (selected[0] == $('#chat .message:last')[0]) {
-							scrollPosition = $(document).height();
-						}
-
-						$(document).scrollTop(scrollPosition);
+				if (newPosition != windowPosition) {
+					if (selected[0] == $('#chat .message:last')[0]) {
+						newPosition = $(document).height();
 					}
+
+					$(document).scrollTop(newPosition);
 				}
 
 				if ((event.which == 33 || event.which == 34) && !n) {
