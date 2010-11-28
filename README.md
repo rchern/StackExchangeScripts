@@ -63,7 +63,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
   * If `[match]` is a string, then it is assumed to be a (partial) substring of a room name.
 * View a user profile
   * `/profile [site] <display name>`
-  * [site] will match for common abbreviations like SO, SF and NTI before defaulting to site.stackexchange.com.
+  * `[site]` will match for common abbreviations like SO, SF and NTI before defaulting to site.stackexchange.com.
 * Pseudo-Oneboxes
   * `/ob [url]` will create onebox-like series of messages that attempt to add onebox support for sites not "officially supported"
     * **Vimeo:** Video links will be turned into a preview frame image of the video plus a link to the video in question. *Only the link, not the image, will take you to the video.*
