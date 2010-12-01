@@ -322,10 +322,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					newPosition = windowPosition;
 
 				if (monologueHeight > windowHeight) {
-					console.log("monologueHeight > windowHeight");
 					newPosition = up ? messageBottom - windowHeight : messageTop;
 				} else if (up && monologueTop < windowPosition || down && monologueBottom > windowPosition + windowHeight) {
-					console.log("up && monologueTop < windowPosition || down && monologueBottom > windowPosition + windowHeight");
 					newPosition = up ? monologueTop : monologueBottom - windowHeight;
 				}
 
