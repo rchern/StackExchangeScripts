@@ -407,7 +407,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		},
 		
 		suppress: function (event) {
-			if (Navigation._active && Navigation.handles((event.which < 123 && event.which > 96 ? event.which - 32 : event.which), event.isCtrl)) {
+			if (Navigation._active && Navigation.handles((event.which < 123 && event.which > 96 ? event.which - 32 : event.which), isCtrl(event))) {
 				event.stopImmediatePropagation();
 				event.preventDefault();
 			}
