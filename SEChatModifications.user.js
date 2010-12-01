@@ -193,6 +193,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 	function isNumber(n) {
 		return !isNaN(parseInt(n, 10)) && isFinite(n);
 	}
+	
+	function isCtrl(event) {
+		return event.ctrlKey || (!event.altKey && event.metaKey);
+	}
 
 	var Navigation = {
 		_active: false,
@@ -252,7 +256,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		},
 
 		launch: function (event) {
-			if (event.ctrlKey && event.which == 38) {
+			if (isCtrl(event) && event.which == 38) {
 				this.blur();
 
 				Navigation._active = true;
@@ -273,7 +277,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		navigate: function (event, n) {
 			Navigation.unpeek();
 
-			if (event.ctrlKey && event.which == 40) {
+			if (isCtrl(event) && event.which == 40) {
 				$(document).scrollTop($(document).height());
 				$('#input').focus();
 
@@ -322,10 +326,8 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					newPosition = windowPosition;
 
 				if (monologueHeight > windowHeight) {
-					console.log("monologueHeight > windowHeight");
 					newPosition = up ? messageBottom - windowHeight : messageTop;
 				} else if (up && monologueTop < windowPosition || down && monologueBottom > windowPosition + windowHeight) {
-					console.log("up && monologueTop < windowPosition || down && monologueBottom > windowPosition + windowHeight");
 					newPosition = up ? monologueTop : monologueBottom - windowHeight;
 				}
 
@@ -347,7 +349,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 				return false;
 			} else {
-				var action = Navigation.handles(event.which, event.ctrlKey),
+				var action = Navigation.handles(event.which, isCtrl(event)),
 					message = selected[0].id.replace("message-", ""),
 					parent  = selected.data('info').parent_id,
 					replied,
@@ -1025,7 +1027,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		// ctrl+space retry
 		page.bindAs(0, 'keydown', function (evt) {
-			if (evt.which == 32 && evt.ctrlKey) {
+			if (evt.which == 32 && isCtrl(evt)) {
 				var value = input.val();
 
 				// This apparently removes the input's text
