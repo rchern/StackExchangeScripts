@@ -443,7 +443,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			return "#.signature:contains('" + match + "') ~ .messages";
 		},
 		getRoom: function getRoom(match) {
-			return "#my-rooms > li > a:first-child:contains('" + match + "')";
+			return "#my-rooms > li > a[href^='/rooms']:contains('" + match + "')";
 		}
 	};
 
@@ -590,7 +590,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			$('#input').val('');
 
 			validateArgs(1, ["string"]);
-			var selector = Selectors.getRoom(match) + "~ .quickswitch";
+			var selector = Selectors.getRoom(match);
 			var rooms = $(selector);
 			if (rooms.length == 1) {
 				window.location = $(rooms[0]).attr("href");
