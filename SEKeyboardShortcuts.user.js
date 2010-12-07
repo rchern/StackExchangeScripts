@@ -35,7 +35,6 @@ function with_jquery(callback) {
 
 with_jquery(function ($) {
 	$(function () {
-
 		$.fn.shortcut = function (fn, params) {
 			params = $.extend({}, $.fn.shortcut.params, params);
 			return this.each(function () {
@@ -87,9 +86,9 @@ with_jquery(function ($) {
 			"reply / comment": { code: "R", fn: function () { selectedPost.closest("#question,.answer").find("a.comments-link").click(); } },
 			"flag": { code: "F", fn: function () { selectedPost.closest("#question,.answer").find("a[id^=flag]").click(); } },
 			"close": { code: "V,C", fn: function () { selectedPost.closest("#question,.answer").find("a[id^=close]").click(); } },
-			"edit": { code: "E", fn: function () { selectedPost.closest("#question,.answer").find("a[id$=edit]").click(); } },
+			"edit": { code: "E", fn: function () { selectedPost.closest("#question,.answer").find("a[href=edit]").click(); } },
 			"bounty": { code: "B", fn: function () { selectedPost.closest("#question,.answer").find("#bounty-link").click(); } },
-			"owner": { code: "O", fn: function () { selectedPost.closest("#question,.answer").find(".user-details a").click(); } }
+			"owner": { code: "O", fn: function () { goToDestination(selectedPost.closest("#question,.answer").find(".user-details a").attr("href")); } }
 		};
 
 
