@@ -40,9 +40,9 @@ with_jquery(function ($) {
 			return this.each(function () {
 				$(this).bind('keyup', function (event) {
 					if (this !== event.target && (/textarea|select/i.test(event.target.nodeName) || event.target.type === "text")) { return; }
-					if (event.keyCode == params.code[params.step]) { params.step++; }
+					if (event.keyCode == params.code[params.step]) { if (params.step == 0) { params.startTime = new Date(); } params.step++; }
 					else { params.step = 0; }
-					if (params.step == params.code.length) { fn(); params.step = 0; }
+					if (params.step == params.code.length) { if (new Date() - params.startTime <= 2E3) { fn(); } params.step = 0; }
 				});
 			});
 		};
@@ -53,7 +53,7 @@ with_jquery(function ($) {
 
 		var selectPost = function (i) {
 			i = i % posts.length;
-			selectedPost = posts.css("border", "").eq(i);
+			selectedPost = posts.css("padding", "5px").css("border", "1px solid " + $("#content").css("backgroundColor")).eq(i);
 			selectedPost.css("border", "1px dashed black");
 			//$.scrollTop(posts.eq(i).position().y);
 		};
