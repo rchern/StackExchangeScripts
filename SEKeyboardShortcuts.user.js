@@ -148,7 +148,7 @@ with_jquery(function ($) {
 			"profile": { code: "G,P", url: $("hlinks-user a").eq(1).href },
 			"sister": { code: "G,S", url: "http://" + (location.hostname.indexOf("meta") === 0 ? location.hostname.substring(5) : "meta." + location.hostname) },
 			"inbox": { code: "G,I", fn: function () { $("#portalLink .genu").click(); $("#portalLink #seTabInbox").click(); } },
-			"help": { code: "?", fn: function () { console.log("help command"); $("#helpOverlay").jqmShow(); } }
+			"help": { code: "?", fn: function () { $("#helpOverlay").jqmShow(); } }
 		};
 
 		var setupHelpOverlay = function () {
@@ -201,7 +201,7 @@ with_jquery(function ($) {
 			}, { "code": code });
 		});
 
-		var questionListing = $("#questions").length > 0;
+		var questionListing = $("#questions,#question-mini-list").length > 0;
 		if (questionListing) {
 			var questions = $("div.question-summary");
 			$w.shortcut(function () { curIndex++; selectItem(questions, curIndex); }, { "code": convertCode("J") });
