@@ -380,10 +380,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					} else if (command == 'peek') {
 						if (parent) {
 							if ((replied = $('#message-' + parent + ' > .content')).length) {
-								Navigation.peek(message, replied.html());
+								Navigation.peek(message, parent, replied.html());
 							} else {
 								$.get('/message/' + parent, function (text) {
-									Navigation.peek(message, text);
+									Navigation.peek(message, parent, text);
 								}, 'text');
 							}
 						}
@@ -401,10 +401,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			}
 		},
 
-		peek: function (reply, text) {
+		peek: function (reply, parent, text) {
 			if ((reply = $('#message-' + reply + '.easy-navigation-selected')).length) {
 				$('<div class="easy-navigation-peekable"></div>')
-					.append('<div class="easy-navigation-peeked-message"><span class="easy-navigation-subtle">Referenced message</span>' + text + '</div>')
+					.append('<div class="easy-navigation-peeked-message"><span class="easy-navigation-subtle">Referenced message<span class="reference-id">#' + parent + '</span></span>' + text + '</div>')
 					.css({
 						'left': reply.offset().left + 'px',
 						'width': reply.outerWidth() + 'px',
@@ -1239,9 +1239,12 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					'position': 'absolute',
 					'z-index': '4'
 				},
+				'.easy-navigation-peekable .onebox': {
+					'color': '#000000'
+				},
 				'.easy-navigation-peeked-message': {
 					'line-height': '1.5em',
-					'padding': '3px 0px 3px 15px'
+					'padding': '3px 10px 4px 15px'
 				},
 				'.easy-navigation-peeked-message .mention': {
 					'color': '#000000'
@@ -1250,6 +1253,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					'color': '#D2F7D0',
 					'display': 'block',
 					'font-size': '10px'
+				},
+				'.easy-navigation-subtle .reference-id': {
+					'float': 'right',
+					'margin-right': '5px'
 				}
 			}
 		);
