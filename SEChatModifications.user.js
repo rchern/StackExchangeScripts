@@ -1255,6 +1255,17 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		);
 
 	 	// ask for notification permissions if we don't already have it
-		if (window.webkitNotifications && (window.webkitNotifications.checkPermission() !== 0)) { $('<button />').text('desktop @mentions').addClass('button').appendTo('#chat-buttons').click(function () { window.webkitNotifications.requestPermission(function () { $("#chat-buttons").remove(this); }); }); }
+		if (window.webkitNotifications && (window.webkitNotifications.checkPermission() !== 0)) {
+			$('<button />').text('desktop @mentions')
+				.addClass('button')
+				.css('margin-left', '4px')
+				.appendTo('#chat-buttons')
+				.click(function () {
+					var self = this;
+					window.webkitNotifications.requestPermission(function () {
+						$(self).remove();
+					});
+				});
+		}
 	});
 });
