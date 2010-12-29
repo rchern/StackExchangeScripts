@@ -118,6 +118,9 @@ with_jquery(function ($) {
 				case "ENTER":
 					c = 13;
 					break;
+				case "ESC":
+					c = 27;
+					break;
 				case "?":
 					c = 191;
 					break;
@@ -148,7 +151,8 @@ with_jquery(function ($) {
 			"profile": { code: "G,P", url: $("hlinks-user a").eq(1).href },
 			"sister": { code: "G,S", url: "http://" + (location.hostname.indexOf("meta") === 0 ? location.hostname.substring(5) : "meta." + location.hostname) },
 			"inbox": { code: "G,I", fn: function () { $("#portalLink .genu").click(); $("#portalLink #seTabInbox").click(); } },
-			"help": { code: "?", fn: function () { $("#helpOverlay").jqmShow(); } }
+			"help": { code: "?", fn: function () { $("#helpOverlay").jqmShow(); } },
+			"close help": { code: "ESC", fn: function () { $(".jqmWindow").jqmHide(); } }
 		};
 
 		var setupHelpOverlay = function () {
