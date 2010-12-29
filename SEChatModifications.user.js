@@ -241,6 +241,10 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				command: 'edit',
 				jump: true
 			},
+			'74': {
+				command: 'jump',
+				jump: false
+			},
 			'80': {
 				command: 'peek',
 				jump: false
@@ -258,6 +262,18 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				jump: true
 			},
 			'ctrl': {}
+		},
+
+		select: function(item) {
+			item = $(item);
+
+			if (item.length) {
+				Navigation._active = true;
+
+				return item.eq(0).addClass('easy-navigation-selected');
+			}
+
+			return null;
 		},
 
 		deselect: function () {
@@ -309,7 +325,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 			if (up || down) {
 				if (!selected.length) {
-					selected = $('#chat .message:last').addClass('easy-navigation-selected');
+					selected = Navigation.select('#chat .message:last');
 				} else {
 					var action = up ? 'prev' : 'next',
 						select = up ? 'last' : 'first',
@@ -321,7 +337,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 					if (sibling.length) {
 						selected.removeClass('easy-navigation-selected');
-						selected = sibling.addClass('easy-navigation-selected');
+						selected = Navigation.select(sibling);
 					}
 				}
 
@@ -391,7 +407,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 						// Require double-confirmation in a roundabout way...
 						$('#input').val("/flag " + message);
 					} else {
-						execute(command, [message]);
+						execute(command, [command == 'jump' ? parent : message]);
 					}
 
 					return false;
@@ -1029,6 +1045,20 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			ul = $(ul).before($('<span/>').text('List of recognised commands:'));
 			showNotification(ul, 10E3);
 			return CommandState.SucceededDoClear;
+		},
+		
+		jump: function(id) {
+			validateArgs(1, ["number"]);
+			var message = $('#message-' + id);
+			
+			if (message.length) {
+				Navigation.deselect();
+				Navigation.select(message);
+
+				$(document).scrollTop(message.offset().top - 5);
+			} else {
+				window.open('http://' + window.location.host + '/transcript/message/' + id + '#' + id);
+			}
 		}
 	};
 
