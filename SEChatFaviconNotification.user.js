@@ -115,10 +115,13 @@
 			}
 			
 			var linkEle = getLink(),
-				newLink = linkEle.cloneNode(false),
+				newLink = document.createElement('link'),
 				head = document.getElementsByTagName('head')[0];
 			
+			newLink.rel = 'shortcut icon';
+			newLink.type = 'image/png';
 			newLink.href = url;
+			
 			head.removeChild(linkEle);
 			head.appendChild(newLink);
 		}
