@@ -1,8 +1,13 @@
 ##SEChatModifications
 Provides keyboard shortcuts and other commands via input text reducing the dependency on mouse usage.  Currently the script adds the id to the right of each message and the commands take in this id to identify the selected message.  Keyboard navigation support is also planned.
 
+* View list of all keyboard commands (except navigation)
+  *. `/help`
 * Star a message
   * `/star <id>`
+  * `<id>` is the numeric id of a message
+* Flag a message
+  * `/start <id>`
   * `<id>` is the numeric id of a message
 * Quote a message
   * `/quote <id>`
@@ -58,7 +63,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
   * If `[match]` is a string, then it is assumed to be a (partial) substring of a room name.
 * View a user profile
   * `/profile [site] <display name>`
-  * [site] will match for common abbreviations like SO, SF and NTI before defaulting to site.stackexchange.com.
+  * `[site]` will match for common abbreviations like SO, SF and NTI before defaulting to site.stackexchange.com.
 * Pseudo-Oneboxes
   * `/ob [url]` will create onebox-like series of messages that attempt to add onebox support for sites not "officially supported"
     * **Vimeo:** Video links will be turned into a preview frame image of the video plus a link to the video in question. *Only the link, not the image, will take you to the video.*
@@ -94,6 +99,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
     * `D` removes the selected message
     * `S` stars the selected message
     * `H` shows the history of the message
+    * `F` puts the command to flag a message in the input box
     * `Right Arrow` edits or begins a reply to the selected message, depending on if you own it
     * `Left Arrow` and `P` display the replied-to message, if the selected message is an explicit reply
 
@@ -103,9 +109,10 @@ Provides minor tweaks to StackExchange sites.
 
 * Adds a timeline link to each question page
 * Turns comment timestamps into links to the comment
-  * Will only work if the comment is visible when the page is linked to.
+  * Will only work if the comment is visible when the page is linked to (Unless you have this script).
 * Adds audit link to /reputation
 * Adds history link to each question and answer
+* Adds chat-like autocomplete for comments, in a way (relatively) consistent with [these criteria](http://meta.stackoverflow.com/questions/43019/how-do-comment-replies-work/43020#43020)
 
 ##SEChatFaviconNotifier
 Adds unread count and @-mention notifications directly to the favicon of the chatroom page. The circle shows the number of unread messages and turns green when someone @-mentions you.
