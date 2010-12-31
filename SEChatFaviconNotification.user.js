@@ -115,10 +115,12 @@
 			}
 			
 			var linkEle = getLink(),
-				newLink = linkEle.cloneNode(false);
+				newLink = linkEle.cloneNode(false),
+				head = document.getElementsByTagName('head')[0];
 			
 			newLink.href = url;
-			document.getElementsByTagName('head')[0].replaceChild(newLink, linkEle);
+			head.removeChild(linkEle);
+			head.appendChild(newLink);
 		}
 	}, 500);
 })();
