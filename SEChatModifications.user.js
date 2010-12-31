@@ -4,8 +4,6 @@
 // @include		http://chat.meta.stackoverflow.com/rooms/*
 // @include		http://chat.stackexchange.com/rooms/*
 // @include		http://chat.stackoverflow.com/rooms/*
-// @include		http://chat.superuser.com/rooms/*
-// @include		http://chat.serverfault.com/rooms/*
 // @include		http://chat.askubuntu.com/rooms/*
 // @author		@rchern
 // ==/UserScript==
@@ -184,6 +182,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			case '8bitlavapwnpwniesbossstagesixforhelp':
 				retVal = 'gaming.stackexchange.com';
 				break;
+			case 'au':
 			case 'askubuntu':
 			case 'ubuntu':
 				retVal = 'askubuntu.com';
@@ -194,6 +193,14 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			case 'seasonedadvice':
 			case 'sa':
 				retVal = 'cooking.stackexchange.com';
+				break;
+			case 'tcs':
+				retVal = 'cstheory.stackexchange.com';
+				break;
+			case 'p.so':
+			case 'pso':
+			case 'programmer':
+				retVal = 'programmers.stackexchange.com';
 				break;
 			default:
 				retVal = n + '.stackexchange.com';
@@ -640,7 +647,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 		},
 		me: function () {
 			// don't validate, just send the output
-			$("#input").val("*" + $.makeArray(arguments).join(" ") + "*");
+			$("#input").val("*" + $.trim($.makeArray(arguments).join(" ")) + "*");
 			$("#sayit-button").click();
 			return CommandState.SucceededDoClear;
 		},
