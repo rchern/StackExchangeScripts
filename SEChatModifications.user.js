@@ -1125,6 +1125,48 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 			});
 		});
 
+		// Victory is mine somehow!
+		if (window.webkitNotifications) {
+			var room = location.pathname.match(/^\/rooms\/(\d+)/),
+				room_id = room ? room[1] : -1;
+				
+			function checkNotificationState() {
+				$('#notification-disabler')[0].checked = localStorage['chat-multiroom-disable'] && localStorage['chat-multiroom-disable'] == 'true';
+			}
+
+			$('<input id="notification-disabler" type="checkbox">').change(function() {
+					localStorage['chat-multiroom-disable'] = this.checked;
+				})
+				.wrap('<label/>')
+				.parent()
+				.append('Disable multi-room notifications')
+				.css({
+					'display': 'block',
+					'margin-top': '4px'
+				})
+				.appendTo('#chat-buttons');
+
+			checkNotificationState();
+
+			$(window).bind('focus', checkNotificationState);
+
+			try {
+				window.webkitNotifications.createDesktopNotification = window.webkitNotifications.createNotification;
+				window.webkitNotifications.createNotification = function(icon, title, text) {
+					var notification = {},
+						source = window.webkitNotifications.createNotification.caller;
+
+					if (localStorage['chat-multiroom-disable'] != 'true' || source && (source = source.caller) && (source = source.arguments) && (source = source[0]) && source.event_type == 18 && (room_id == -1 || source.room_id == room_id)) {
+						notification = window.webkitNotifications.createDesktopNotification(icon, title, text);
+
+						setTimeout(function() { notification.cancel(); }, 1E3);
+					}
+
+					return notification;
+				};
+			} catch (e) {}
+		}
+
 
 		// Style insertion, a la GM_addStyle, but using jQuery CSS syntax
 		(function (style_obj) {
