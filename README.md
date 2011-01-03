@@ -87,6 +87,8 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
   * `/rmclip [id]` will remove the clip with that id from the clipboard
 * Retry a rate limited message
   * Hit `ctrl+space` to resend the message.
+* Jump to a message
+  * `/jump [id]` if the message is still in the chat window, chat will scroll to it and it will be keyboard-navigation selected, otherwise the message will open in the transcript
 * Navigate messages with keyboard
   * `Ctrl` + `Up Arrow` begins navigation
   * `Ctrl` + `Down Arrow` cancels navigation and jumps to message input
@@ -100,6 +102,7 @@ Provides keyboard shortcuts and other commands via input text reducing the depen
     * `S` stars the selected message
     * `H` shows the history of the message
     * `F` puts the command to flag a message in the input box
+    * `J` jumps to the replied-to message, if the selected message is an explicit reply
     * `Right Arrow` edits or begins a reply to the selected message, depending on if you own it
     * `Left Arrow` and `P` display the replied-to message, if the selected message is an explicit reply
 
