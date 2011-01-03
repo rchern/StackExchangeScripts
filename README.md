@@ -116,3 +116,10 @@ Provides minor tweaks to StackExchange sites.
 * Adds audit link to /reputation
 * Adds history link to each question and answer
 * Adds chat-like autocomplete for comments, in a way (relatively) consistent with [these criteria](http://meta.stackoverflow.com/questions/43019/how-do-comment-replies-work/43020#43020)
+
+##SEChatFaviconNotifier
+Adds unread count and @-mention notifications directly to the favicon of the chatroom page. The circle shows the number of unread messages and turns green when someone @-mentions you.
+
+##SEAnswerWatcher
+
+**Warning: This script is not finished and may include defects / missing features.** Adds a 'answers' tab to the StackExchange SuperColliding Dropdown Menu. Answers and tag wikis can then be watched and the user be notified when new comments arrives, or when the answer is edited. 
