@@ -1063,14 +1063,6 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					.addClass('timestamp')
 					.attr('id', 'id-' + id);
 			}
-
-			if ($(this).find(".mention").length > 0) {
-				if (window.webkitNotifications && (window.webkitNotifications.checkPermission() === 0)) {
-					var n = window.webkitNotifications.createNotification($("#footer-logo img").attr("src").replace("logo.png", "apple-touch-icon.png"), $("#roomname").text(), $(this).find(".content").text());
-					n.show();
-					setTimeout(function () { n.cancel(); }, 10E3);
-				}
-			}
 		});
 
 		// handle commands
@@ -1253,8 +1245,5 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				}
 			}
 		);
-
-	 	// ask for notification permissions if we don't already have it
-		if (window.webkitNotifications && (window.webkitNotifications.checkPermission() !== 0)) { $('<button />').text('desktop @mentions').addClass('button').appendTo('#chat-buttons').click(function () { window.webkitNotifications.requestPermission(function () { $("#chat-buttons").remove(this); }); }); }
 	});
 });
