@@ -1075,7 +1075,7 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		// ctrl+space retry
 		page.bindAs(0, 'keydown', function (evt) {
-			if (evt.which == 32 && isCtrl(event)) {
+			if (evt.which == 32 && isCtrl(evt)) {
 				var value = input.val();
 
 				// This apparently removes the input's text
