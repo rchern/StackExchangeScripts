@@ -122,4 +122,4 @@ Adds unread count and @-mention notifications directly to the favicon of the cha
 
 ##SEAnswerWatcher
 
-**Warning: This script is not finished and may include defects / missing features.** Adds a 'answers' tab to the StackExchange SuperColliding Dropdown Menu. Answers and tag wikis can then be watched and the user be notified when new comments arrives, or when the answer is edited. 
+**Warning: This script is not finished and may include defects / missing features.** Adds a 'answers' tab to the StackExchange SuperColliding Dropdown Menu. Answers and tag wikis can then be watched and the user be notified when new comments arrives, or when the answer is edited. This script is an experiment in exploring if userscripts could be made to integrate with the MultiCollider SuperDropdown. 
