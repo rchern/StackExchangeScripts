@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
+
+<html>
+	<head>
+		<title>StackExchangeScripts - Home</title>
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+	</head>
+	<body>
+		<div id="container">
+			<div id="header">
+				<h1><span class="w1">Stack</span><span class="w2">Exchange</span><span class="w3">Scripts</span><span class="w4">.user.js</span></h1>
+				<p id="sub">A community maintained set of userscripts to improve the Stack Exchange sites</p>
+
+				<ul id="nav">
+					<li><a href="#about">about</a></li><li>
+					<a href="#feature">features</a></li><li>
+					<a href="#install">install</a></li><li>
+					<a href="#contribute">contribute</a></li>
+				</ul>
+			</div>
+			
+			<div id="content">
+				<div id="about">
+					<p><strong><span class="w1">Stack</span><span class="w2">Exchange</span><span class="w3">Scripts</span></strong>
+					is a repository of userscripts created by Stack Exchange Community Manager
+					<a href="http://meta.stackoverflow.com/users/140548/rebecca-chernoff">Rebecca Chernoff</a>. It currently 
+					contains client-side userscripts that integrate useful tools and modifications to improve the Stack Exchange
+					user interface. </p>
+					<p>The repository started with a single script to improve
+					<a href="http://chat.stackexchange.com/">Stack Exchange chat</a> and grew from there to include scripts
+					for the Question and Answer section of Stack Exchange sites as well.
+					</p>
+					<p>The goal of these scripts has always been to build upon the existing functionality of the Stack Exchange
+					system, either by providing convenient user interfaces to existing undocumented or under-documented
+					functions (such as the <a href="http://meta.stackoverflow.com/q/54366/150097">timeline</a>
+					or <a href="http://meta.stackoverflow.com/q/43004/150097">reputation audit</a>), or by creating
+					new and intuitive ways to use existing features (like the keyboard navigation for chat)</p>
+				</div>
+				
+				<div id="feature">
+					<h2>Features</h2>
+					
+					<ul>
+						<li><strong><a href="#">SEChatModification.user.js</a></strong> - Provides keyboard shortcuts and
+						other IRC-like <code>/commands</code> via input text reducing the dependency on mouse usage for
+						Stack Overflow, Meta Stack Overflow and Stack Exchange Chat. Keyboard navigation is also supported,
+						and can be used select and perform actions on chat messages</li>
+						
+						<li><strong><a href="#">SEChatFaviconNotifier.user.js</a></strong> - Uses the chatroom favicon to
+						notify you of new unread messages and <code>@-mentions</code></li>
+						
+						<li><strong><a href="#">SEModification.user.js</a></strong> - Provides username autocomplete for
+						<a href="http://meta.stackoverflow.com/q/43019/150097">comment replies</a>, adds
+						<a href="http://meta.stackoverflow.com/q/54366/150097">timeline</a> and history links to posts and
+						<a href="http://meta.stackoverflow.com/q/43004/150097">reputation audit</a> link to the header.</li>
+						
+						<li><strong><a href="#">SEKeyboardShortCuts.user.js</a></strong> - Adds keyboard shortcuts to allow
+						Stack Exchange Sites to be navigable purely with the keyboard</li>
+					</ul>
+					
+					<p>For detailed information, check out the <a href="https://github.com/rchern/StackExchangeScripts/blob/master/README.md">README</a></p>
+				</div>
+				
+				<div id="install">
+					<h2>Installation</h2>
+					<h3>Firefox and Chrome</h3>
+					<ol>
+						<li><span class="inline-notice">Firefox Only</span> Install the
+						<a href="https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/">Greasemonkey</a> add-on
+						for Firefox</li>
+						<li>Click on the link to the script you want to install from the list below</li>
+						<li>Confirm installation, refresh all sites affected by the scripts (especially chatrooms) and enjoy!</li>
+					</ol>
+					
+					<h3>Opera</h3>
+					<ol>
+						<li>Go to <span class="inline-notice">Tools > Preferences > Advanced > Content > JavaScript Options</span>
+						and choose or create a folder to contain your userscripts</li>
+						<li>Right click on the link to the script you want to install and save the script to the folder you just choose</li>
+						<li>Refresh all sites affected by the scripts (especially chatrooms) and enjoy!</li>
+					</ol>
+					
+					<h3>Scripts</h3>
+					<ul>
+						<li><a href="https://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js">SEChatModifications.user.js</a></li>
+						<li><a href="https://github.com/rchern/StackExchangeScripts/raw/master/SEModifications.user.js">SEModifications.user.js</a></li>
+						<li><a href="https://github.com/rchern/StackExchangeScripts/raw/master/SEKeyboardShortcuts.user.js">SEKeyboardShortcuts.user.js</a></li>
+						<li><a href="https://github.com/rchern/StackExchangeScripts/raw/master/SEChatFaviconNotification.user.js">SEChatFaviconNotification.user.js</a></li>
+					</ul>
+				</div>
+				
+				<div id="contribute">
+					<h2>Contribute</h2>
+					<p>We'd love to have you help us - <strong><span class="w1">Stack</span><span class="w2">Exchange</span><span class="w3">Scripts</span></strong>
+					is a community maintained project, and we need <strong>your</strong> help to keep this project going. Here's how you can help:</p>
+					<div id="contribute-left">
+						<h3>Report bugs or suggest new features</h3>
+						<p>Create a new issue on the project's <a href="https://github.com/rchern/StackExchangeScripts/issues">Github Issues page.</a>
+						<strong class="or">or</strong> Discuss the issue with us in the <a href="http://chat.meta.stackoverflow.com/rooms/89/the-tavern-general">Meta Tavern</a></p>
+						<p>If it's a bug, please try to update to the latest version first, and report the browser and version.
+						Any error reported by the browser will also be very helpful.</p>
+					</div>
+					<div id="contribute-right">
+						<h3>Develop new features</h3>
+						<p>Create a fork of <a href="http://github.com/rchern/StackExchangeScripts">the project on Github</a>
+						<sup><a href="http://help.github.com/forking/">(how?)</a></sup>, and create a push request when you're done. Also remember to discuss
+						the code you're working on with us in the
+						<a href="http://chat.meta.stackoverflow.com/rooms/89/the-tavern-general">Meta Tavern</a>.</p>
+					</div>
+					
+					<h3>Contributors</h3>
+					<ul id="contributors">
+						<li><img src="http://www.gravatar.com/avatar/dbeea4799b1694afafa7fcf72dde68e4?s=36" alt="Rebecca Chernoff's gravatar" />
+							<h4>Rebecca Chernoff</h4> <p>Stack Exchange Community Manager, creator, oy master</p>
+							<a href="http://meta.stackoverflow.com/users/140548/rebecca-chernoff">Profile on MSO</a>
+						</li>
+						<li><img src="http://www.gravatar.com/avatar/3981cd271c302f5cba628c6b6d2b32ee?s=36&d=identicon" alt="Tim Stone's gravatar" />
+							<h4>Tim Stone</h4> <p>Created keyboard navigation for SEChatModification</p>
+							<a href="http://meta.stackoverflow.com/users/150235/tim-stone">Profile on MSO</a>
+						</li>
+						<li><img src="http://www.gravatar.com/avatar/398eb5455ff290780d6164c830e6186b?s=36" alt="Yi Jiang's gravatar" />
+							<h4>Yi Jiang</h4> <p>Helped with SEChatModification and built SEFaviconNotifier</p>
+							<a href="http://meta.stackoverflow.com/users/150097/yi-jiang">Profile on MSO</a>
+						</li>
+						<li><img src="http://www.gravatar.com/avatar/501465a53bf1042de206d7d79cc68942?s=36" alt="Benjol's gravatar" />
+							<h4>Benjol</h4> <p>Added the <code>/update</code> commands to SEChatModification</p>
+							<a href="http://meta.stackoverflow.com/users/130064/benjol">Profile on MSO</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		
+		<div id="footer">This project is not affliated with <a href="http://stackexchange.com/">Stack Overflow Internet Services Inc.</a>
+		in any way. All scripts are community maintained and powered by <a href="#" id="unicorn">unicorns</a> and waffles.</div>
+		
+		<script>
+		document.getElementById('unicorn').onclick = function(){
+			var img=document.getElementsByTagName('img');
+			
+			for(var i=0, l=img.length; i<l; i++){
+				img[i].src = img[i].src.replace(/\w*\.gravatar\.com/i, 'unicornify.appspot.com');
+			}
+			
+			return false;
+		};
+		</script>
+
+	</body>
+</html>
