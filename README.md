@@ -60,7 +60,7 @@ are currently supported:
   Supported URL formats:
   * `http://vimeo.com/{video-id}`
   * `http://vimeo.com/channels/{channel-name}#{video-id}`
-  * `htt[://vimeo.com/category/{group-name}/videos/{video-id}`
+  * `http://vimeo.com/category/{group-name}/videos/{video-id}`
 
 ### Highlighting messages
 
@@ -90,23 +90,23 @@ The clipboard is a place to store messages and notes to yourself.
     
 ### Keyboard Navigation
 
-  * `Ctrl` + `Up Arrow` begins navigation
-  * `Ctrl` + `Down Arrow` cancels navigation and jumps to message input
-  * `Up Arrow` and `Down Arrow` navigate between messages
-    * `Page Up` and `Page Down` navigate more quickly (5 messages at a time)
+  * <kbd>Ctrl</kbd> + <kbd>Up Arrow</kbd> begins navigation
+  * <kbd>Ctrl</kbd> + <kbd>Down Arrow</kbd> cancels navigation and jumps to message input
+  * <kbd>Up Arrow</kbd> and <kbd>Down Arrow</kbd> navigate between messages
+    * <kbd>Page Up</kbd> and <kbd>Page Down</kbd> navigate more quickly (5 messages at a time)
   * On a selected message:
-    * `Q` quotes the selected message
-    * `E` edits the selected message
-    * `R` begins a reply to the selected message
-    * `D` removes the selected message
-    * `S` stars the selected message
-    * `H` shows the history of the message
-    * `F` puts the command to flag a message in the input box
-    * `J` jumps to the replied-to message, if the selected message is 
+    * <kbd>Q</kbd> quotes the selected message
+    * <kbd>E</kbd> edits the selected message
+    * <kbd>R</kbd> begins a reply to the selected message
+    * <kbd>D</kbd> removes the selected message
+    * <kbd>S</kbd> stars the selected message
+    * <kbd>H</kbd> shows the history of the message
+    * <kbd>F</kbd> puts the command to flag a message in the input box
+    * <kbd>J</kbd> jumps to the replied-to message, if the selected message is 
       an explicit reply
-    * `Right Arrow` edits or begins a reply to the selected message, 
+    * <kbd>Right Arrow</kbd> edits or begins a reply to the selected message, 
       depending on if you own it
-    * `Left Arrow` and `P` display the replied-to message, if the 
+    * <kbd>Left Arrow</kbd> and <kbd>P</kbd> display the replied-to message, if the 
       selected message is an explicit reply
 
 ### Other features
