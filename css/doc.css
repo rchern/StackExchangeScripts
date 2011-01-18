@@ -19,8 +19,6 @@ body {
 	line-height: 1;
 	font-family: Arial, sans-serif;
 	font-size: 14px;
-	width: 600px;
-	margin: 0 auto;
 	color: #444;
 }
 ol, ul {
@@ -73,19 +71,16 @@ sub a, sup a {
 	text-decoration: none;
 }
 
-#container {
-	font-family: Arial, sans-serif;
-	margin-bottom: 80px;
-}
-
 #header {
 	margin: 0 auto;
-	padding-top: 30px;
+	padding: 8px 0 12px;
+	background: #F2FCFF;
 }
 
 #header h1 {
-	margin: 0 auto 10px;
-	font-size: 30px;
+	width: 600px;
+	margin: 0 auto;
+	font-size: 16px;
 }
 
 #header h1 a {
@@ -96,6 +91,38 @@ sub a, sup a {
 	content: '\235F';
 	color: #205196;
 	margin-left: 6px;
+	position: absolute;
+}
+
+#header #repo-link {
+	float: right;
+	font-size: 13px;
+	margin-top: 3px;
+}
+
+#header #repo-link:hover:after {
+	content: '';
+}
+
+
+#content {
+	width: 600px;
+	margin: 0 auto;
+}
+
+#content h1 {
+	font-size: 34px;
+	padding: 30px 0 0;
+}
+
+#content h1 a.source {
+	font-size: 14px;
+	visibility: hidden;
+	text-decoration: none;
+}
+
+#content h1:hover a.source {
+	visibility: visible;
 }
 
 /* StackExchangeScripts name! */
@@ -118,14 +145,20 @@ span.w4 { color: #205196; }
 	text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
 }
 
+abbr {
+	border-bottom: 1px dotted;
+	cursor: help;
+}
+
 code {
 	background: #f3f3f3;
-	padding: 2px 5px;
+	padding: 1px 4px;
 	
 	-moz-border-radius: 2px;
 	-webkit-border-radius: 2px;
 	border-radius: 2px;
 	text-shadow: 0 1px 0 #fff;
+	border: 1px solid #d9d9d9;
 }
 
 kbd {
@@ -146,6 +179,19 @@ code span.argument {
 	color: #888;
 }
 
+img {
+	border: 1px solid #ccc;
+	padding: 8px;
+	
+	-moz-box-shadow: 0 1px 2px #CCCCCC, inset 0 0 5px #eee;
+	-webit-box-shadow: 0 1px 2px #CCCCCC, inset 0 0 5px #eee;
+	box-shadow: 0 1px 2px #CCCCCC, inset 0 0 5px #eee;
+	
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+}
+
 #content {
 	color: #666;
 	line-height: 1.6em;
@@ -162,10 +208,11 @@ code span.argument {
 }
 
 #content ul {
-	list-style: square outside none;
+	list-style: circle outside none;
 }
 
 #content ul ul {
+	list-style: disc outside none;
 	margin: 12px 0 16px 25px;
 }
 
@@ -173,6 +220,11 @@ code span.argument {
 #content ul li {
 	line-height: 1.4em;
 	margin: 4px 0 6px 8px;
+}
+
+#content ul.nobullet,
+#content ol.nobullet {
+	list-style: none;
 }
 
 #content h3 {
@@ -185,4 +237,11 @@ code span.argument {
 	margin: 16px 0 12px;
 	padding-top: 24px;
 	border-top: 3px solid #eee;
+}
+
+#footer {
+	border-top: 1px solid #ccc;
+	margin: 50px 0 20px;
+	padding-top: 15px;
+	font-size: 11px;
 }
