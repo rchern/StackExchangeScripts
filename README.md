@@ -7,7 +7,7 @@ for individual messages to be navigatable through the keyboard.
 
 ### Performing an action on a message
 
-All of the following commands take a single arugement - the id of the 
+All of the following commands take a single argument - the id of the 
 message you want the action to be performed. You can find the id on the 
 right side of each message beside the timestamp
 
@@ -42,8 +42,9 @@ out for these two commands to perform the action on your last message.
 * `/last <username>` - scrolls to the last message said by the user. `<username>` 
   can be a partial match
 * `/profile <site> <name>` - searches the `<site>` for users with display name 
-  matching `<name>`. `<site>` will go through common abbreviations like MSO, AU 
-  and 8bitlavapwnpwniesbossstagesixforhelp before defaulting to `<site>.stackexchange.com`
+  matching `<name>`. `<site>` will go through common abbreviations like 
+  <abbr title="Meta Stack Overflow">MSO</abbr>, <abbr title="Ask Ubuntu">AU</abbr> and <abbr title="Gaming">8bitlavapwnpwniesbossstagesixforhelp</abbr> 
+  before defaulting to `<site>.stackexchange.com`
 * `/me <message>` - wraps the `<message>` in a pair of `*` to italicise it in a 
   lame attempt at emulating IRC `/me`
 
@@ -119,9 +120,10 @@ limited messages can be retried with `ctrl` + `space`
 Provides minor tweaks to StackExchange sites.
 
 * Adds a timeline link to each question page
-* Turns comment timestamps into links to the comment
-  * Will only work if the comment is visible when the page is linked 
-    to (Unless you have this script).
+* Turns comment timestamps into links to the comment, so that they can be linked to.
+  This will only work if the comment is visible when the page is linked to - posts with more than
+  5 comments and 20 comments on Metas will only show their top voted comments
+  (Unless you have this script).
 * Adds audit link to /reputation
 * Adds history link to each question and answer
 
