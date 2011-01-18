@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
+
+<html>
+<head>
+    <title>README - StackExchangeScripts</title>
+    <link rel="stylesheet" type="text/css" href="css/doc.css">
+</head>
+
+<body>
+	<div id="header">
+		<h1><a href="http://rchern.github.com/StackExchangeScripts/">
+		<span class="w1">Stack</span><span class="w2">Exchange</span><span class="w3">Scripts</span><span class="w4">.user.js</span></a></h1>
+	</div>
+	<div id="content">
+		<h2>SEChatModifications</h2>
+		
+		<p>Provides keyboard shortcuts and other commands via input text reducing 
+		the dependency on mouse usage.  Currently the script adds the id to the 
+		right of each message and the commands take in this id to identify the 
+		selected message. Keyboard navigation support has also been added allowing 
+		for individual messages to be navigatable through the keyboard.</p>
+		
+		<h3>Performing an action on a message</h3>
+		
+		<p>All of the following commands take a single arugement - the id of the 
+		message you want the action to be performed. You can find the id on the 
+		right side of each message beside the timestamp</p>
+		
+		<ul>
+			<li><code>/star</code> - star the message </li>
+			<li><code>/del</code> - deletes the message</li>
+			<li><code>/edit</code> - edits the message</li>
+			<li><code>/quote</code> - quote the message whose id you pass, by posting a link to it</li>
+			<li><code>/flag</code> - will flag the message as offensive, spam or noise</li>
+			<li><code>/history</code> - displays the edit history of that message</li>
+			<li><code>/jump</code> - scrolls to that message if it is </li>
+		</ul>
+		
+		<p><code>/edit</code> and <code>/delete</code> can only be performed during the two minute grace 
+		period, after which the message is locked. The message id can be left 
+		out for these two commands to perform the action on your last message. </p>
+		
+		<h3>Room commands</h3>
+		
+		<ul>
+			<li><code>/load</code> - loads more messages</li>
+			<li><code>/list &lt;filter&gt;</code> - list all rooms, ordered by activity. Rooms will be 
+			filtered by <code>&lt;filter&gt;</code> if it is provided</li>
+			<li><code>/join &lt;id&gt;</code> - join the room with the <code>&lt;id&gt;</code>. Usually used in 
+			conjunction with <code>/list</code></li>
+			<li><code>/switch &lt;match&gt;</code> - switch to a room which you have already joined. 
+			Takes a (partial) substring of the room name you are switching to</li>
+			<li><code>/transcript &lt;search&gt;</code> - view the room transcript. Performs a transcript 
+			search if <code>&lt;search&gt;</code> is provided</li>
+			<li><code>/leave &lt;match&gt;</code> - leaves the room with name or id matching <code>&lt;match&gt;</code>, 
+			or all rooms if <code>all</code> is used, or the current room if nothing is passed</li>
+		</ul>
+		
+		<h3>User commands</h3>
+		
+		<ul>
+			<li><code>/last &lt;username&gt;</code> - scrolls to the last message said by the user. <code>&lt;username&gt;</code> 
+			can be a partial match</li>
+			<li><code>/profile &lt;site&gt; &lt;name&gt;</code> - searches the <code>&lt;site&gt;</code> for users with display name 
+			matching <code>&lt;name&gt;</code>. <code>&lt;site&gt;</code> will go through common abbreviations like MSO, AU 
+			and 8bitlavapwnpwniesbossstagesixforhelp before defaulting to <code>&lt;site&gt;.stackexchange.com</code></li>
+			<li><code>/me &lt;message&gt;</code> - wraps the <code>&lt;message&gt;</code> in a pair of <code>*</code> to italicise it in a 
+			lame attempt at emulating IRC <code>/me</code></li>
+		</ul>
+		
+		<h3>Pseudo-Oneboxes</h3>
+		
+		<p>The <code>/ob [url]</code> command will create onebox-like series of messages that attempt 
+		to add onebox support for sites not "officially supported". The following sites 
+		are currently supported:</p>
+		
+		<ul>
+			<li><p><strong>Vimeo:</strong> Video links will be turned into a preview frame 
+			image of the video plus a link to the video in question. 
+			<em>Only the link, not the image, will take you to the video.</em></p>
+			
+			<p>Supported URL formats:</p>
+			
+			<ul>
+				<li><code>http://vimeo.com/{video-id}</code></li>
+				<li><code>http://vimeo.com/channels/{channel-name}#{video-id}</code></li>
+				<li><code>http://vimeo.com/category/{group-name}/videos/{video-id}</code></li>
+			</ul>
+			</li>
+		</ul>
+		
+		<h3>Highlighting messages</h3>
+		
+		<p>In high volume rooms messages or conversations can often be lost under the 
+		deluge of activity. Highlighting messages can be a useful way of keeping 
+		a temporary bookmark or keeping track of one or more user's messages. </p>
+		
+		<p>The <code>/hl &lt;match&gt;</code> command takes a message id or a username match to highlight 
+		that particular message or user's messages. Calling it without any arguments 
+		will list all active highlight rules. </p>
+		
+		<h3>Clipboard</h3>
+		
+		<p>The clipboard is a place to store messages and notes to yourself.</p>
+		
+		<ul>
+			<li><code>/jot [match]</code> is used to take down messages or notes.
+				<ul>
+					<li>If <code>[match]</code> is a number, than the message with that id is taken 
+					down into the clipboard, else everything else after <code>/jot</code> is 
+					stored into the clipboard as a note.</li>
+					<li>After jotting down things into the clipboard, an id will be shown.
+					This id will be used to refer to the note when pasting or 
+					removing the message from the clipboard.</li>
+				</ul>
+			</li>
+			<li><code>/clips</code> will show a list of all messages and notes taken. Clips and also be managed from here.</li>
+			<li><code>/paste [id]</code> if a message is pasted, that message will be <strong>quoted</strong>, 
+			else a new message with the note's content will be generated</li>
+			<li><code>/rmclip [id]</code> will remove the clip with that id from the clipboard</li>
+		</ul>
+		
+		<h3>Keyboard Navigation</h3>
+		
+		<ul>
+			<li><kbd>Ctrl</kbd> + <kbd>Up Arrow</kbd> begins navigation</li>
+			<li><kbd>Ctrl</kbd> + <kbd>Down Arrow</kbd> cancels navigation and jumps to message input</li>
+			<li><kbd>Up Arrow</kbd> and <kbd>Down Arrow</kbd> navigate between messages
+				<ul>
+					<li><kbd>Page Up</kbd> and <kbd>Page Down</kbd> navigate more quickly (5 messages at a time)</li>
+				</ul>
+			</li>
+			<li>On a selected message:
+				<ul>
+					<li><kbd>Q</kbd> quotes the selected message</li>
+					<li><kbd>E</kbd> edits the selected message</li>
+					<li><kbd>R</kbd> begins a reply to the selected message</li>
+					<li><kbd>D</kbd> removes the selected message</li>
+					<li><kbd>S</kbd> stars the selected message</li>
+					<li><kbd>H</kbd> shows the history of the message</li>
+					<li><kbd>F</kbd> puts the command to flag a message in the input box</li>
+					<li><kbd>J</kbd> jumps to the replied-to message, if the selected message is 
+					an explicit reply</li>
+					<li><kbd>Right Arrow</kbd> edits or begins a reply to the selected message, 
+					depending on if you own it</li>
+					<li><kbd>Left Arrow</kbd> and <kbd>P</kbd> display the replied-to message, if the 
+					selected message is an explicit reply</li>
+				</ul>
+			</li>
+		</ul>
+		
+		<h3>Other features</h3>
+		
+		<p>The script will add the id of every message as well as its timestamp on 
+		the right of every message, to aid in using some of the commands. Rate 
+		limited messages can be retried with <kbd>ctrl</kbd> + <kbd>space</kbd></p>
+		
+		<h2>SEModifications</h2>
+		
+		<p>Provides minor tweaks to StackExchange sites.</p>
+		
+		<ul>
+			<li>Adds a timeline link to each question page</li>
+			<li>Turns comment timestamps into links to the comment
+				<ul>
+					<li>Will only work if the comment is visible when the page is linked 
+					to (Unless you have this script).</li>
+				</ul>
+			</li>
+			<li>Adds audit link to /reputation</li>
+			<li>Adds history link to each question and answer</li>
+		</ul>
+		
+		<h3>Autocomplete</h3>
+		
+		<p><img src="http://i.imgur.com/eTq50.png" alt="Comment reply autocomplete in action" title="" /></p>
+		
+		<p>This script also adds chat-like autocomplete for comments replies, in a way (relatively) 
+		consistent with <a href="http://meta.stackoverflow.com/questions/43019/how-do-comment-replies-work/43020#43020">these criteria</a>. 
+		Note that while editors can be notified, their usernames will not show up 
+		on the list of names. </p>
+		
+		<h2>SEChatFaviconNotifier</h2>
+		
+		<p><img src="http://i.imgur.com/llq97.png" alt="Chatroom favicons with different numbers of unread message counts" title="" /></p>
+		
+		<p>Adds unread count and @-mention notifications directly to the favicon of 
+		the chatroom page. The circle shows the number of unread messages and 
+		turns green when someone @-mentions you.</p>
+	</div>
+</body>
+</html>

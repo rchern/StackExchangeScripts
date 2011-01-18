@@ -1,0 +1,188 @@
+/* v1.0 | 20080212 */
+
+html, body, div, span, 
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, cite, code,
+del, dfn, em, font, img, ins, kbd, q, strong, sub, sup,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	font-size: 100%;
+	vertical-align: baseline;
+	background: transparent;
+}
+body {
+	line-height: 1;
+	font-family: Arial, sans-serif;
+	font-size: 14px;
+	width: 600px;
+	margin: 0 auto;
+	color: #444;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+
+/* remember to define focus styles! */
+:focus {
+	outline: 0;
+}
+
+/* remember to highlight inserts somehow! */
+ins {
+	text-decoration: none;
+}
+del {
+	text-decoration: line-through;
+}
+
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+a {
+	color: #518FD9;
+}
+
+a:hover {
+	color: #65BAF3;
+}
+
+sup, sub {
+	font-size: 0.8em;
+}
+
+sup { vertical-align: super; }
+sub { vertical-align: sub; }
+
+sub a, sup a {
+	text-decoration: none;
+}
+
+#container {
+	font-family: Arial, sans-serif;
+	margin-bottom: 80px;
+}
+
+#header {
+	margin: 0 auto;
+	padding-top: 30px;
+}
+
+#header h1 {
+	margin: 0 auto 10px;
+	font-size: 30px;
+}
+
+#header h1 a {
+	text-decoration: none;
+}
+
+#header h1 a:hover:after {
+	content: '\235F';
+	color: #205196;
+	margin-left: 6px;
+}
+
+/* StackExchangeScripts name! */
+
+span.w1 { color: #84D2E9; }
+span.w2 { color: #65BAF3; }
+span.w3 { color: #518FD9; }
+span.w4 { color: #205196; }
+
+.inline-notice {
+	padding: 2px 5px;
+	background: #518FD9;
+	color: #fff;
+	font-weight: bold;
+	font-size: 0.9em;
+	
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+	text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+code {
+	background: #f3f3f3;
+	padding: 2px 5px;
+	
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
+	border-radius: 2px;
+	text-shadow: 0 1px 0 #fff;
+}
+
+kbd {
+	background: #eee;
+    border-color: #ccc #aaa #888 #bbb;
+    border-style: solid;
+    border-width: 1px 2px 2px 1px;
+    padding: 2px 4px;
+    white-space: nowrap;
+}
+
+code, kbd {
+	font-size: 0.9em;
+	color: #111;
+}
+
+code span.argument {
+	color: #888;
+}
+
+#content {
+	color: #666;
+	line-height: 1.6em;
+}
+
+#content p,
+#content ul,
+#content ol {
+	margin-bottom: 18px;
+}
+
+#content ol {
+	list-style: decimal outside none;
+}
+
+#content ul {
+	list-style: square outside none;
+}
+
+#content ul ul {
+	margin: 12px 0 16px 25px;
+}
+
+#content ol li,
+#content ul li {
+	line-height: 1.4em;
+	margin: 4px 0 6px 8px;
+}
+
+#content h3 {
+	font-size: 14px;
+	margin-bottom: 10px;
+}
+
+#content h2 {
+	font-size: 20px;
+	margin: 16px 0 12px;
+	padding-top: 24px;
+	border-top: 3px solid #eee;
+}
