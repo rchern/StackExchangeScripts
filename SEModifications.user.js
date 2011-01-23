@@ -281,11 +281,15 @@ with_jquery(function ($) {
 		
 		// Uses ajax to load revision source inline
 		if(location.pathname.match(/^\/posts\/\d+\/revisions/)){
-			$('.revision a:contains("view source"), .owner-revision a:contains("view source")').click(function(){
+			$('.revision a:contains("view source"), .owner-revision a:contains("view source")').one('click', function(){
+				var link = $(this).text('loading...');
+				
 				$.ajax({
 					url:this.href,
 					context: $(this).closest('tr').next().find('.post-text'),
 					success: function(data){
+						link.removeAttr('href').removeAttr('target');
+						
 						$('<pre>', {
 							text: $(data).filter('pre').text(),
 							css: {
