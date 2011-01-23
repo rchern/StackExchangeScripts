@@ -278,5 +278,25 @@ with_jquery(function ($) {
 
 		// adds an audit link next to your rep in the header that leads to /reputation
 		$("#hlinks-user .reputation-score").parent().after("<a href='/reputation'>(audit)</a>");
+		
+		// Uses ajax to load revision source inline
+		if(location.pathname.match(/^\/posts\/\d+\/revisions/)){
+			$('.revision a:contains("view source"), .owner-revision a:contains("view source")').click(function(){
+				$.ajax({
+					url:this.href,
+					context: $(this).closest('tr').next().find('.post-text'),
+					success: function(data){
+						$('<pre>', {
+							text: $(data).filter('pre').text(),
+							css: {
+								whiteSpace: 'pre-wrap'
+							}
+						}).appendTo(this);
+					}
+				});
+				
+				return false;
+			});
+		}
 	});
 });
