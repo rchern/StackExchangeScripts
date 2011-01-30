@@ -277,7 +277,10 @@ with_jquery(function ($) {
 		}
 
 		// adds an audit link next to your rep in the header that leads to /reputation
-		$("#hlinks-user .reputation-score").parent().after("<a href='/reputation'>(audit)</a>");
+		var locationBits = location.hostname.split('.');
+		
+		if(locationBits[0] !== 'meta' || locationBits[1] === 'stackoverflow')
+			$("#hlinks-user .reputation-score").parent().after("<a href='/reputation'>(audit)</a>");
 		
 		// Uses ajax to load revision source inline
 		if(location.pathname.match(/^\/posts\/\d+\/revisions/)){
