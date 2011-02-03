@@ -136,6 +136,14 @@ consistent with [these criteria](http://meta.stackoverflow.com/questions/43019/h
 Note that while editors can be notified, their usernames will not show up 
 on the list of names. 
 
+##SEReputationAuditHelper
+
+This script adds certain useful information to the reputation audit page (`/reputation` on all SE 2.0 sites): 
+
+* Autolinkifies the post ID associated with each reputation event
+* Adds description for each vote type instead of seeing vote ID
+* Adds a links to reputation audit pages for all other SE sites for faster navigation
+
 ##SEChatFaviconNotifier
 
 ![Chatroom favicons with different numbers of unread message counts](http://i.imgur.com/llq97.png)
