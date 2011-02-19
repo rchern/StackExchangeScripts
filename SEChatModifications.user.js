@@ -1,353 +1,968 @@
 // ==UserScript==
-// @name		SE Chat Modifications
-// @description	A collection of modifications for SE chat rooms
-// @include		http://chat.meta.stackoverflow.com/rooms/*
-// @include		http://chat.stackexchange.com/rooms/*
-// @include		http://chat.stackoverflow.com/rooms/*
-// @include		http://chat.askubuntu.com/rooms/*
-// @author		@rchern
+// @name         SE Chat Modifications
+// @description  A collection of modifications for SE chat rooms
+// @include      http://chat.meta.stackoverflow.com/rooms/*
+// @include      http://chat.stackexchange.com/rooms/*
+// @include      http://chat.stackoverflow.com/rooms/*
+// @include      http://chat.askubuntu.com/rooms/*
+// @author       @rchern
 // ==/UserScript==
 
-function with_plugin(url, callback) {
-	var script = document.createElement("script");
-	script.setAttribute("src", url);
-	script.addEventListener("load", function () {
-		var script = document.createElement("script");
-		script.type = "text/javascript";
-		script.textContent = "(" + callback.toString() + ")(jQuery)";
-		document.body.appendChild(script);
-	}, false);
-	document.body.appendChild(script);
+/*
+ * Injects functions into the page so they can freely interact with existing code
+ */
+function inject() {
+	for (var i = 0; i < arguments.length; ++i) {
+		if (typeof(arguments[i]) == 'function') {
+			var script = document.createElement('script');
+
+			script.type = 'text/javascript';
+			script.textContent = '(' + arguments[i].toString() + ')(jQuery)';
+
+			document.body.appendChild(script);
+		}
+	}
 }
 
-with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
-	$.expr[':'].contains = function (a, i, m) {
-		return jQuery(a).text().toUpperCase().indexOf(m[3].toUpperCase()) >= 0;
+// Inject the support plugins, followed by the main userscript function
+inject(livequery, bindas, expressions, function ($) {
+	// Setup the selector shortcuts
+	var Selectors = {
+		'getMessage': function getMessage(id) {
+			validate('number');
+			
+			return id ? '#message-' + id : '.user-container.mine:last .message:last';
+		},
+		'getSignature': function getSignature(match) {
+			validate('string');
+			
+			return ".signature:contains('" + match + "') ~ .messages";
+		},
+		'getRoom': function getRoom(match) {
+			validate('string');
+		
+			return "#my-rooms > li > a[href^='/rooms']:contains('" + match + "')";
+		}
 	};
-
-	$.expr[':'].regex = function (elem, index, match) {
-		var matchParams = match[3].split(','),
-			validLabels = /^(data|css):/,
-			attr = {
-				method: matchParams[0].match(validLabels) ?
-							matchParams[0].split(':')[0] : 'attr',
-				property: matchParams.shift().replace(validLabels, '')
-			},
-			regexFlags = 'ig',
-			regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g, ''), regexFlags);
-		return regex.test(jQuery(elem)[attr.method](attr.property));
+	
+	// Setup the highlight and clipping objects
+	var Highlights = new Storage(),
+		Clippings = new Storage('chatClips');
+	
+	// The list of command states that can be returned from a command function, or one of the command utility functions
+	var CommandState = {
+		// The command wasn't found
+		'NotFound': -1,
+		// The command failed validation or couldn't execute properly
+		'Failed': 0,
+		// The command succeeded, and the input should be cleared (where applicable)
+		'SucceedDoClear': 1,
+		// The command succeeded, and the input should not be cleared (where applicable)
+		'SucceedNoClear': 2
 	};
+	
+	// Setup the command mapping
+	var Commands = {};
+	
+	// Create the navigation
+	var Navigation = new Navigation();
 
-	$.fn.extend({
-		bindAs: function (nth, type, data, fn) {
-			if (typeof type == "object") {
-				for (var key in type) {
-					this.bindAs(nth, key, data, type[key], fn);
+	// Setup the main chat extension function, responsible for handling command processing (client-exposed)
+	var ChatExtension = window.ChatExtension = new function () {
+		/*
+		 * Defines new chat extension commands, allowing outside functions to plug into the existing userscript infrastructure
+		 */
+		this.define = function (name, fn) {
+			name = name.toLowerCase();
+
+			if (Commands[name])
+				throw new Error("The command " + name + " is already defined");
+
+			Commands[name] = fn;
+		};
+
+		/*
+		 * Executes commands and automatically displays errors in the case of failed function validation
+		 */
+		this.execute = function (name, args) {
+			var result = CommandState.NotFound;
+
+			// Check if the command is defined
+			if (Commands[name]) {
+				try {
+					// Attempt to run the command and get the result
+					result = Commands[name].apply(this, args);
+				} catch (ex) {
+					result = CommandState.Failed;
 				}
 			}
 
-			if (type.indexOf(' ') > -1) {
-				var s = type.split(' ');
+			return result;
+		};
 
-				for (var i = 0; i < s.length; ++i) {
-					this.bindAs(nth, s[i], data, fn);
-				}
-			}
+		/*
+		 * Displays a (usually error) notification dialog to the user for the specified period of time, or until a keyboard or mouse press event occurs
+		 */
+		this.notify = function (message, delay) {
+			if (!delay)
+				delay = 3000;
 
-			if ($.isFunction(data) || data === false) {
-				fn = data;
-				data = undefined;
-			}
-
-			if (nth < 0) {
-				nth = 0;
-			}
-
-			for (var i = 0; i < this.length; ++i) {
-				var elem = this[i];
-
-				$.event.add(elem, type, fn, data);
-
-				var elemData = jQuery.data(elem);
-				var eventKey = elem.nodeType ? "events" : "__events__";
-				var events = elemData[eventKey];
-
-				if (events && typeof events === "function") {
-					events = events.events;
-				}
-
-				if (events) {
-					var handlers = events[type];
-
-					if (handlers && handlers.length > nth + 1) {
-						handlers.splice(nth, 0, handlers.splice(handlers.length - 1, 1)[0]);
+			$('#inputerror').html(message)
+				.fadeIn("slow")
+				.delay(delay)
+				.fadeOut("slow")
+				.hover(
+					function () {
+						$(this).clearQueue();
+					},
+					function () {
+						$(this).delay(delay).fadeOut("slow");
 					}
+				)
+				.css({
+					'max-height': ($(window).height() - 90) + 'px',
+					'max-width': '60%'
+				});
+		};
+		
+		this.style = function (styleObject) {
+			var userStyle = $('style#user-style'),
+				styleText = userStyle.length ? userStyle.text() : '';
+			
+			for (var selector in styleObject) {
+				styleText = styleText + selector + '{';
+				
+				for (var style in styleObject[selector]) {
+					styleText = styleText + style + ':' + styleObject[selector][style] + ';';
 				}
+				
+				styleText = styleText + '}';
 			}
+			
+			if (!userStyle.length)
+				userStyle = $('<style id="user-style" />').appendTo('head');
+				
+			userStyle.text(styleText);
+		};
 
-			return this;
-		}
-	});
-
-	function execute(name, args) {
-		var returnVal;
-		if (commands[name]) {
-			try {
-				returnVal = commands[name].apply(this, args);
-			} catch (e) {
-				returnVal = CommandState.Failed;
-				showNotification("Error processing " + name + ":  " + e.message);
-			}
-		} else {
-			returnVal = CommandState.NotFound;
-		}
-		return returnVal;
-	}
-
-	function showNotification(msg, delay) {
-		if (!delay) { delay = 3000; }
-		var inputError = $("#inputerror");
-		inputError
-			.html(msg)
-			.fadeIn("slow").delay(delay).fadeOut("slow")
-			.hover(function () {
-				$(this).clearQueue();
-			}, function () {
-				$(this).delay(delay).fadeOut("slow");
-			}).css({
-				maxHeight: $(window).height() - 90,
-				maxWidth: '60%',
-				overflowY: 'scroll'
-			});
-	}
-
-	function validateArgs(expectedLength, expectedTypes) {
-		var actualArgs = validateArgs.caller.arguments;
-		var actualLength = actualArgs.length;
-
-		if (expectedLength) {
-			if (expectedLength !== actualLength) {
-				throw new Error("Expected " + expectedLength + " args to " + validateArgs.caller.name + " but received " + actualLength);
-			}
-		}
-
-		if (expectedTypes) {
-			for (var i = 0; i < actualLength; i++) {
-				var actualType = typeof (actualArgs[i]);
-				var expectedType = expectedTypes[i];
-				if (expectedType === "number" && isNumber(actualArgs[i])) {
-					actualType = "number";
-				}
-				if (actualType !== expectedType) {
-					throw new Error("Parameter " + i + " should have type " + expectedType + " but has type " + actualType);
-				}
-			}
-		}
-	}
-
-	function matchSite(n, prefix) {
-		n = n.toLowerCase();
-		var retVal;
-
-		if (typeof prefix == 'undefined') { prefix = ''; }
-
-		if (n.indexOf('meta') === 0) {
-			n = n.substring(4);
-			if (n.indexOf('.') === 0) { n = n.substring(1); }
-
-			prefix = prefix + 'meta.';
-		}
-
-		switch (n) {
-			case 'so':
-			case 'stackoverflow':
-				retVal = 'stackoverflow.com';
-				break;
-			case 'mso':
-				retVal = 'meta.stackoverflow.com';
-				break;
-			case 'su':
-			case 'superuser':
-				retVal = 'superuser.com';
-				break;
-			case 'sf':
-			case 'serverfault':
-				retVal = 'serverfault.com';
-				break;
-			case 'wa':
-			case 'nti':
-			case 'nothingtoinstall':
-				retVal = 'webapps.stackexchange.com';
-				break;
-			case '8bitlavapwnpwniesbossstagesixforhelp':
-				retVal = 'gaming.stackexchange.com';
-				break;
-			case 'au':
-			case 'askubuntu':
-			case 'ubuntu':
-				retVal = 'askubuntu.com';
-				break;
-			case 'onstartups':
-				retVal = 'answers.onstartups.com';
-				break;
-			case 'seasonedadvice':
-			case 'sa':
-				retVal = 'cooking.stackexchange.com';
-				break;
-			case 'tcs':
-				retVal = 'cstheory.stackexchange.com';
-				break;
-			case 'p.so':
-			case 'pso':
-			case 'programmer':
-				retVal = 'programmers.stackexchange.com';
-				break;
-			default:
-				retVal = n + '.stackexchange.com';
-				break;
-		}
-
-		return 'http://' + prefix + retVal;
-	}
-
-	function isNumber(n) {
-		return !isNaN(parseInt(n, 10)) && isFinite(n);
-	}
-
-	function isCtrl(event) {
-		return event.ctrlKey || (!event.altKey && event.metaKey);
-	}
-
-	var Navigation = {
-		_active: false,
-
-		_actions: {
-			'37': {
-				command: 'peek',
-				jump: false
-			},
-			'39': {
-				command: function (target) {
-					return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
-				},
-				jump: true
-			},
-			'68': {
-				command: 'del',
-				jump: true
-			},
-			'70': {
-				command: 'flag',
-				jump: true
-			},
-			'72': {
-				command: 'history',
-				jump: false
-			},
-			'69': {
-				command: 'edit',
-				jump: true
-			},
-			'74': {
-				command: 'jump',
-				jump: false
-			},
-			'80': {
-				command: 'peek',
-				jump: false
-			},
-			'81': {
-				command: 'quote',
-				jump: true
-			},
-			'82': {
-				command: 'reply',
-				jump: true
-			},
-			'83': {
-				command: 'star',
-				jump: true
-			},
-			'ctrl': {}
-		},
-
-		select: function(item) {
-			item = $(item);
-
-			if (item.length) {
-				Navigation._active = true;
-
-				return item.eq(0).addClass('easy-navigation-selected');
-			}
-
-			return null;
-		},
-
-		deselect: function () {
-			Navigation._active = false;
-			Navigation.unpeek();
-			$('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
-		},
-
-		launch: function (event) {
-			if (isCtrl(event) && event.which == 38) {
-				this.blur();
-
-				Navigation._active = true;
-
-				$(document).trigger(event);
-
-				event.preventDefault();
-				event.stopImmediatePropagation();
-
+		this.bind = Navigation.bind;
+		this.validate = validate;
+		this.Selectors = Selectors;
+		this.CommandState = CommandState;
+	};
+	
+	// Define the on ready activities
+	$(function () {
+		var input = $('#input'),
+			page = $(document);
+			
+		// Add a handler for Ctrl + Space message resubmission
+		page.bindAs(0, 'keydown', function (event) {
+			if (event.which == 32 && isCtrl(event)) {
+				// Store the value, since the next step removes it
+				var value = input.val();
+				
+				$('.message.pending:first a:contains(retry)').click();
+				
+				input.val(value);
+				
 				return false;
 			}
-		},
+		});
+	
+		// Add a handler to remove the overlay
+		page.bindAs(0, 'click keydown', function (event) {
+			var error = $('#inputerror');
 
-		handles: function (key, isCtrl) {
-			return (!isCtrl ? Navigation._actions : $.extend({}, Navigation._actions, Navigation._actions.ctrl))[key];
-		},
+			if (event.target != error[0]) {
+				error.clearQueue().fadeOut('slow');
+			}
+		});
+		
+		// Add a handler for /commands
+		input.bindAs(0, 'keydown', function (event) {
+			var value = input.val();
+			
+			if (event.which == 13 && value.substring(0, 1) == '/') {
+				if (value.substring(1, 2) == '/') {
+					input.val(value.substring(1));
+				} else {
+					var args = value.split(' '),
+						command = args[0].substring(1),
+						result;
+						
+					args = Array.prototype.slice.call(args, 1);
+					result = ChatExtension.execute(command, args);
+					
+					if (result == CommandState.SucceededDoClear)
+						input.val('');
+					else if (result == CommandState.NotFound)
+						ChatExtension.notify($(getCommands()).before($('<span />').text("Unknown command, try again, or use // to escape commands")));
+						
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					
+					return false;
+				}
+			}
+		});
+		
+		// Add keyboard navigation handlers
+		input.bindAs(0, 'keydown', Navigation.launch);
+		input.bindAs(0, 'focus', Navigation.deselect);
+		page.bindAs(0, 'click', Navigation.deselect);
+		page.bindAs(0, 'keydown', Navigation.navigate);
+		page.bindAs(0, 'keypress', Navigation.suppress);
+		$('.message').livequery(Navigation.update);
+		
+		// Add a handler to update clips across tabs
+		$(window).bindAs(0, 'focus', function (event) {
+			Clippings.update();
+		});
+		
+		// Highlight persisted highlight items
+		for (var i = 0; i < Highlights.items.length; ++i) {
+			addHighlight(Highlights.items[i]);
+		}
+		
+		// Show the message ID and timestamp on each message
+		$(".message:not(.pending):not(.posted)").livequery(function () {
+			var id = this.id.replace("message-", "");
 
-		navigate: function (event, n) {
-			Navigation.unpeek();
+			if (!$(this).siblings('#id-' + id).length) {
+				var timestamp = new Date($(this).data().info.time * 1000);
+				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
+				$(this).prev(".timestamp").remove();
+				$('<div />').insertBefore(this)
+					.text(id + ' ' + timestamp)
+					.addClass('timestamp')
+					.attr('id', 'id-' + id);
+			}
+		});
+		
+		// Inject clipboard button and clipboard message link
+		$('<button class="button" />')
+			.text('clipboard')
+			.appendTo('#chat-buttons')
+			.click(function () {
+				ChatExtension.execute('clips', null);
+			});
+			
+		$('.message').livequery(function () {
+			var self = this;
+			
+			$('<span class="action_clip" />')
+				.prependTo($(this).find('.meta'))
+				.attr('title', "Add this message to my clipboard")
+				.click(function () {
+					ChatExtension.execute('jot', [self.id.substring(8)]);
+				});
+		});
+	});
+	
+	// Define the snippet list command
+	ChatExtension.define('clips', function () {
+		validate(0);
+		
+		var ol = $('<ol class="clips_list" />');
+		
+		for (var i = 0; i < Clippings.items.length; ++i) {
+			ol.append(createClipItem(i, Clippings.items[i].room, Clippings.items[i].display, true));
+		}
+		
+		ChatExtension.notify(ol, 7.5E3);
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the delete command
+	ChatExtension.define('del', function (id) {
+		if (id)
+			validate('number');
 
+		id = Selectors.getMessage(id) + ' .action-link';
+		
+		if (!$(id).click().closest('.message').find('.delete').eq(0).click().length)
+			throw new Error("Unable to delete message");
+			
+		return CommandState.SucceededNoClear;		
+	});
+	
+	// Define the edit command
+	ChatExtension.define('edit', function (id) {
+		if (id)
+			validate('number');
+
+		id = Selectors.getMessage(id) + ' .action-link';
+		
+		if (!$(id).click().closest('.message').find('.edit').eq(0).click().length)
+			throw new Error("Unable to edit message");
+			
+		return CommandState.SucceededNoClear;
+	});
+	
+	// Define the message flag command
+	ChatExtension.define('flag', function (id) {
+		validate('number');
+		
+		$(Selectors.getMessage(id) + ' .flags .img').eq(0).click();
+		
+		return CommandState.SucceedDoClear;
+	});
+	
+	// Define the help command
+	ChatExtension.define('help', function () {
+		ChatExtension.notify($('<span />').text('List of recognized commands:').add(getCommands()), 7.5E3);
+	});
+	
+	// Define the message history command
+	ChatExtension.define('history', function (id) {
+		validate('number');
+		
+		$('<div class="gm_room_list" />').load('/messages/' + id + '/history #content', function () {
+			ChatExtension.notify(this, 7.5E3);
+		});
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the highlight display command
+	ChatExtension.define('hl', function (match) {
+		if (typeof match == 'undefined') {  //no parameters = show list
+			var ul = $('<ul />').addClass('gm_room_list');
+
+			if (Highlights.items.length > 0) {
+				for (var i = 0; i < Highlights.items.length; i++) {
+					(function (current) {
+						$('<a />').click(function () {
+								$('#input').val('/hl ' + current).focus();
+								return false;
+							})
+							.attr('href', '#')
+							.text(current)
+							.wrap('<li />')
+							.parent()
+							.appendTo(ul);
+					})(Highlights.items[i]);
+				}
+			} else {
+				ul = $('<p />').text('Currently there are no highlighted users or messages');
+			}
+
+			ChatExtension.notify(ul, 7.5E3);
+		} else { //if already in list, remove - else add
+			match = $.makeArray(arguments).join(' ');
+			
+			if ($.inArray(match, Highlights.items) >= 0) {
+				Highlights.remove(match);
+				removeHighlight(match);
+			} else {
+				Highlights.add(match);
+				addHighlight(match);
+			}
+		}
+
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the jump command
+	ChatExtension.define('jump', function (id) {
+		validate('number');
+		
+		var message = $(Selectors.getMessage(id));
+		
+		if (message.length) {
+			Navigation.deselect();
+			Navigation.select(message);
+			
+			$(document).scrollTop(message.offset().top - 5);
+		} else {
+			window.open('http://' + window.location.host + '/transcript/message/' + id + '#' + id);
+		}
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the snippet jotting command
+	ChatExtension.define('jot', function () {
+		var first = arguments[0],
+			room = $('#roomname').text(),
+			insert, display;
+			
+		if (isNumber(first)) {
+			validate('number');
+			
+			insert = 'http://' + window.location.hostnmae + '/transcript/message/' + first;
+			var content = $(Selectors.getMessage(first));
+			
+			if (content.length !== 1)
+				throw new Error("The message you're trying to jot down cannot be found");
+			
+			display = content.find('.content').html();
+		} else {
+			display = insert = $.makeArray(arguments).join(' ');
+			
+			if (insert === '')
+				throw new Error("You have not entered anything to be jotted down");
+		}
+		
+		Clippings.add({
+			'display': display,
+			'insert': insert,
+			'room': room
+		});
+		
+		ChatExtension.notify($('<ul class="clips_list" />').append(createClipItem(Clippings.items.length - 1, room, display, false)), 7.5E3);
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the show last message command
+	ChatExtension.define('last', function (match) {
+		match = $.makeArray(arguments).join(' ');
+		match = $(Selectors.getSignature(match)).last();
+		
+		if (!match.length)
+			throw new Error("Last message cannot be found. Try /load more messages.", 2000);
+		
+		match.addClass('highlight');
+		
+		window.setTimeout(function () {
+			match.removeClass('highlight');
+		}, 2000);
+		
+		$.scrollTo(match, 200);
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the leave room command
+	ChatExtension.define('leave', function (match) {
+		$('#input').val('');
+
+		// Determine which room to leave
+		if (!match) {
+			// No argument - Leave current room
+			$('#leave').click();
+		} else if (isNumber(match)) {
+			// Numerals - Leave room id
+			$('#room-' + match).children('.quickleave').click();
+		} else if (match.toLowerCase() === 'all') {
+			// all - Leave all rooms
+			$('#leaveall').click();
+		} else {
+			// String - leave room containing string
+			$(Selectors.getRoom(match) + "~ .quickleave").click();
+		}
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the room list command
+	ChatExtension.define('list', function (match) {
+		$.get('/', {
+			'tab': 'all',
+			'sort': 'active',
+			'page': 1,
+			'filter': match
+		}, function (data) {
+			var ul = $('<ul />').addClass('gm_room_list'),
+				page = $(data),
+				pageCount = page.filter('.pager').find('a').length;
+
+			function processPage() {
+				var room = $(this).find('h3 .room-name');
+				var href = room.find("a").attr("href");
+				var id = this.id.substring(this.id.indexOf('-') + 1);
+
+				$('<a />').attr({
+					'href': href,
+					'target': '_self'
+				}).text(id + " - " + room.attr("title"))
+					.wrap('<li />')
+					.parent()
+					.appendTo(ul);
+			}
+
+			page.filter(".roomcard").each(processPage);
+
+			if (pageCount >= 2) {
+				for (var i = 2; i <= pageCount; i++) {
+					$.get('/', {
+						'tab': 'all',
+						'sort': 'active',
+						'page': i,
+						'filter': match
+					}, function (data) {
+						$(data).filter(".roomcard").each(processPage);
+						
+						if (i >= pageCount)
+							ChatExtension.notify(ul, 7.5E3);
+					});
+				}
+			} else {
+				ChatExtension.notify(ul, 7.5E3);
+			}
+		});
+
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the load older messages command
+	ChatExtension.define('load', function () {
+		validate(0);
+		
+		var message = $('.message')[0];
+		
+		$('#getmore').data('events').click[0].handler(function() {
+			$(document).scrollTo(message, 400);
+		});
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the /me command
+	ChatExtension.define('me', function () {
+		// Don't validate anything, just send the formatted output
+		$('#input').val('*' + $.trim($.makeArray(arguments.join(' ')) + '*'));
+		$('#sayit-button').click();
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the pseudo-onebox command
+	ChatExtension.define('ob', function (url) {
+		validate('string');
+		
+		url = url.replace(/https?:\/\/(www\.)?/, '');
+
+		if (url.indexOf('vimeo.com') > -1) {
+			var id;
+
+			if (url.match(/^vimeo\.com\/[0-9]+/)) {
+				id = url.split('/')[1];
+			} else if (url.match(/^vimeo\.com\/channels\/[\d\w]+#[0-9]+/)) {
+				id = url.split('#')[1];
+			} else if (url.match(/vimeo\.com\/groups\/[\d\w]+\/videos\/[0-9]+/)) {
+				id = url.split('/')[4];
+			} else {
+				throw new Error('Unsupported Vimeo URL');
+			}
+
+			$.ajax({
+				url: 'http://vimeo.com/api/v2/video/' + id + '.json',
+				dataType: 'jsonp',
+				success: function (data) {
+					// Drop in small preview frame
+					$('#input').val(data[0].thumbnail_large);
+					$('#sayit-button').click();
+
+					// Wait a bit before dropping in the video title
+					(function (title, url, name) {
+						setTimeout(function () {
+							$('#input').val('[â–¶ Watch **' + title + '** by ' + name + ' on Vimeo](' + url + ')');
+							$('#sayit-button').click();
+						}, 400);
+					})(data[0].title, data[0].url, data[0].user_name);
+				}
+			});
+		}
+	});
+	
+	// Define the snippet paste command
+	ChatExtension.define('paste', function (id) {
+		validate('number');
+		
+		$('#input').val(Clippings.items[id].insert);
+		$('#sayit-button').click();
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the user profile command
+	ChatExtension.define('profile', function () {
+		match = $.makeArray(arguments).slice(1).join(" ");
+		var url = matchSite(arguments[0], 'api.') + '/1.0/users/',
+			currentSite = matchSite(arguments[0]);
+
+		$.ajax({
+			'url': url,
+			dataType: 'jsonp',
+			jsonp: 'jsonp',
+			data: {
+				filter: match,
+				pagesize: 50
+			},
+			cache: true,
+			success: function (data) {
+				var response = '';
+
+				function buildOb(data) {
+					var ob = $('<div />').css({
+						textAlign: 'left',
+						padding: '10px 20px 20px',
+						overflow: 'hidden'
+					}),
+						userInfo = $('<div />').css('float', 'left').appendTo(ob),
+						title = $('<div />').text(', ' + data.location).appendTo(userInfo),
+						stat = $('<div />').appendTo(userInfo),
+						name = data.display_name + (data.user_type === 'moderator' ? ' â™¦' : '');
+
+					$('<a />').attr('href', currentSite + '/users/' + data.user_id)
+						.addClass('ob-user-username')
+						.text(name)
+						.prependTo(title);
+
+					// repNumber: Chat function for displaying rep - adds in k for 10k+ reps
+					$('<span />').addClass('reputation-score').text(repNumber(data.reputation)).appendTo(stat);
+
+					$('<img />').css({
+						float: 'left',
+						marginRight: 10
+					}).attr({
+						src: 'http://www.gravatar.com/avatar/' + data.email_hash + '?s=64&d=identicon',
+						alt: ''
+					}).prependTo(ob);
+
+					$.ajax({
+						'url': url + data.user_id + '/tags',
+						dataType: 'jsonp',
+						jsonp: 'jsonp',
+						data: {
+							pagesize: 8
+						},
+						cache: true,
+						success: function (data) {
+							var wrapper = $('<div />').appendTo(userInfo).css('margin-top', 4);
+							for (var i = 0; i < data.tags.length; i++) {
+								var outer = $('<a />')
+									.attr('href', currentSite + '/tagged/' + data.tags[i].name)
+									.appendTo(wrapper).css('text-decoration', 'none');
+
+								$('<span />')
+									.addClass('ob-user-tag')
+									.text(data.tags[i].name)
+									.appendTo(outer)
+									.css({
+										borderStyle: 'solid',
+										marginRight: 5
+									});
+							}
+						}
+					});
+
+					var badgeN = 1;
+					for (var i in data.badge_counts) {
+						$('<span />').addClass('badge' + badgeN++).appendTo(stat);
+						$('<span />').addClass('badgecount').text(data.badge_counts[i]).appendTo(stat);
+					}
+
+					return ob;
+				}
+
+				if (data.total === 0) {
+					response = $('<p />').text('There are no user that match your search');
+				} else if (data.total === 1) {
+					$('#input').val(currentSite + '/users/' + data.users[0].user_id);
+					response = buildOb(data.users[0]);
+				} else {
+					response = $('<ul />').addClass('gm_room_list profile');
+
+					for (var i = 0; i < data.users.length; i++) {
+						(function (current) {
+							var anchor = $('<a />').click(function () {
+								$('#input').val(currentSite + '/users/' + current.user_id);
+								ChatExtension.notify(buildOb(current), 7.5E3);
+								return false;
+							}).attr('href', '#')
+								.text(' ' + current.reputation)
+								.wrap('<li />');
+
+							$('<strong />').text(current.display_name + (current.user_type === 'moderator' ? ' â™¦' : '')).prependTo(anchor);
+
+							$('<img />').attr({
+								src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14&d=identicon',
+								alt: ''
+							}).prependTo(anchor);
+
+							anchor.parent().appendTo(response);
+						})(data.users[i]);
+					}
+
+					if (data.total > 50) {
+						$('<li />').append($('<h3 />').text('Your query returned too many results. Currently showing the top 50 sorted by reputation')).prependTo(response);
+					}
+				}
+
+				ChatExtension.notify(response, 7.5E3);
+			}
+		});
+
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the message quote command
+	ChatExtension.define('quote', function (id) {
+		validate('number');
+		
+		$('#input').val('http://' + window.location.host + '/transcript/message/' + id + '#' + id);
+		$('#sayit-button').click();
+	});
+	
+	// Define the snippet remove command
+	ChatExtension.define('rmclip', function (id) {
+		validate('number');
+		
+		Clippings.remove(Clippings.items[id]);
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the message star command
+	ChatExtension.define('star', function (id) {
+		validate('number');
+
+		$(Selectors.getMessage(id) + ' .stars .img').eq(0).click();
+		
+		return CommandState.SucceedDoClear;
+	});
+	
+	// Define the room switch command
+	ChatExtension.define('switch', function (match) {
+		validate('string');
+		
+		var rooms = $(Selectors.getRoom(match));
+		
+		if (rooms.length !== 1) {
+			throw new Error("Unable to find a single match");
+		}
+		
+		window.location = rooms.attr('href');
+	});
+	
+	// Define the transcript view command
+	ChatExtension.define('transcript', function (match) {
+		var href = '';
+	
+		if (!match) {
+			href = $("a.button[href^='/transcript']").attr('href');
+		} else {
+			var search = $('#searchbox'),
+				form = search.parent();
+				
+			href = form.attr('action') + '?room=' + $("input[name='room']", form).val() + '&' + search.attr('name') + '=' + escape(match);
+		}
+		
+		window.open(href);
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	// Define the update command
+	ChatExtension.define('update', function () {
+		validate(0);
+		
+		try {
+			window.location = 'http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js';
+		} catch (ex) {}
+		
+		return CommandState.SucceededDoClear;
+	});
+	
+	/*
+	 * Defines the storage wrapper
+	 */
+	function Storage(name) {
+		this.storageName = name || window.location.pathname + 'chatHighlights';
+		this.items = [];
+			
+		/*
+		 * Adds an item to this local storage collection
+		 */
+		this.add = function (match) {
+			if ($.inArray(match, this.items) == -1) {
+				this.items.push(match);
+				this.store();
+			}	
+		};
+		
+		/*
+		 * Removes an item from this local storage collection
+		 */
+		this.remove = function (match) {
+			var index = $.inArray(match, this.items);
+			if (index > -1) {
+				this.items.splice(index, 1);
+				this.store();
+			}
+		};
+		
+		/*
+		 * Updates the item list of this local storage collection
+		 */
+		this.update = function () {
+			if (localStorage[this.storageName] != null)
+				this.items = JSON.parse(localStorage[this.storageName]);
+		};
+		
+		this.update();
+		
+		this.store = function () {
+			localStorage[this.storageName] = JSON.stringify(this.items);
+		}
+	}
+	
+	/*
+	 * Defines the keyboard navigation functionality
+	 */
+	function Navigation() {
+		var active = false,
+			actions = {
+				'37': {
+					'command': 'peek',
+					'jump': false
+				},
+				'39': {
+					'command': function (target) {
+						return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
+					}
+				},
+				'68': {
+					'command': 'del',
+				},
+				'69': {
+					'command': 'edit'
+				},
+				'70': {
+					'command': 'flag',
+				},
+				'72': {
+					'command': 'history',
+					'jump': false
+				},
+				'74': {
+					'command': 'jump',
+					'jump': false
+				},
+				'80': {
+					'command': 'peek',
+					'jump': false
+				},
+				'81': {
+					'command': 'quote'
+				},
+				'82': {
+					'command': 'reply'
+				},
+				'83': {
+					'command': 'star',
+				}
+			};
+		
+		/*
+		 * Binds new keyboard navigation message commands
+		 */
+		this.bind = function (key, command, jump) {
+			if (actions[key])
+				throw new Error("The key " + key + " is already mapped");
+				
+			if (typeof(command) !== 'string' && typeof(command) !== 'function')
+				throw new Error("The command must be a command name (string) or function");
+				
+			actions[key] = {
+				'command': command,
+				'jump': !!jump
+			};
+		};
+		
+		/*
+		 * Selects the specified message, turning on keyboard navigation in the process
+		 */
+		this.select = selectMessage;
+		
+		// TS: We can't call this function "select", because Chrome undefines the reference in navigate() for some reason
+		function selectMessage(message) {
+			message = $(message);
+			
+			if (message.length) {
+				active = true;
+				
+				return message.eq(0).addClass('easy-navigation-selected');
+			}
+			
+			return null;
+		}
+		
+		/*
+		 * Deselects any selected messages, hides the current message peek if present, and disables keyboard navigation
+		 */
+		this.deselect = deselect;
+		
+		function deselect() {
+			active = false;
+			
+			unpeek();
+			$('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
+		}
+		
+		/*
+		 * Launches the keyboard navigation
+		 */
+		this.launch = function (event) {
+			if (isCtrl(event) && event.which == 38) {
+				this.blur();
+				
+				active = true;
+				
+				$(document).trigger(event);
+				
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				
+				return false;
+			}
+		};
+		
+		/*
+		 * Performs the bulk of the keyboard navigation work
+		 */
+		this.navigate = function (event, n) {
+			unpeek();
+			
 			if (isCtrl(event) && event.which == 40) {
 				$(document).scrollTop($(document).height());
 				$('#input').focus();
-
+				
 				return true;
 			}
-
-			if (!Navigation._active) {
+			
+			if (!active)
 				return true;
-			}
-
-			if (n === 0) {
+				
+			if (n === 0)
 				return false;
-			}
-
+				
 			var selected = $('#chat .easy-navigation-selected'),
 				up = event.which == 33 || event.which == 38,
 				down = event.which == 34 || event.which == 40;
-
+				
 			if (up || down) {
 				if (!selected.length) {
-					selected = Navigation.select('#chat .message:last');
+					selected = selectMessage('#chat .message:last');
 				} else {
 					var action = up ? 'prev' : 'next',
 						select = up ? 'last' : 'first',
 						sibling = selected[action + 'All']('.message:first');
 
-					if (!sibling.length) {
+					if (!sibling.length)
 						sibling = selected.closest('.monologue')[action + 'All']('.monologue:first').find('.message:' + select);
-					}
 
 					if (sibling.length) {
 						selected.removeClass('easy-navigation-selected');
-						selected = Navigation.select(sibling);
+						selected = selectMessage(sibling);
 					}
 				}
-
+				
 				var monologue = selected.closest('.monologue'),
 					messageTop = selected.offset().top,
 					messageHeight = selected.outerHeight(true),
@@ -373,40 +988,37 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					$(document).scrollTop(newPosition);
 				}
 
-				if ((event.which == 33 || event.which == 34) && !n) {
+				// Allow using Page Up / Page Down to skip five messages at a time
+				if ((event.which == 33 || event.which == 34) && !n)
 					n = 5;
-				}
 
-				if (n) {
-					Navigation.navigate(event, n - 1);
-				}
-
+				if (n)
+					arguments.callee(event, n - 1);
+					
 				return false;
 			} else {
-				var action = Navigation.handles(event.which, isCtrl(event)),
+				var action = handles(event),
 					message = selected[0].id.replace("message-", ""),
 					parent = selected.data('info').parent_id,
 					replied,
 					command = action ? action.command : null;
 
 				if (command && !selected.find('.content > .deleted').length) {
-					if (typeof command == 'function') {
+					if (typeof command === 'function')
 						command = command(selected);
-					}
 
-					if (action.jump) {
+					if (typeof action.jump === 'undefined' || action.jump)
 						$('#input').focus();
-					}
 
 					if (command == 'reply') {
 						$('#input').val(':' + message + ' ' + $('#input').val().replace(/^:\d+\s*/, ''));
 					} else if (command == 'peek') {
 						if (parent) {
 							if ((replied = $('#message-' + parent + ' > .content')).length) {
-								Navigation.peek(message, parent, replied.html());
+								peek(message, parent, replied.html());
 							} else {
 								$.get('/message/' + parent, function (text) {
-									Navigation.peek(message, parent, text);
+									peek(message, parent, text);
 								}, 'text');
 							}
 						}
@@ -414,17 +1026,22 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 						// Require double-confirmation in a roundabout way...
 						$('#input').val("/flag " + message);
 					} else {
-						execute(command, [command == 'jump' ? parent : message]);
+						ChatExtension.execute(command, [command == 'jump' ? parent : message]);
 					}
 
 					return false;
 				} else if (command) {
-					showNotification('Cannot perform actions on a deleted message...', 2000);
+					ChatExtension.notify('Cannot perform actions on a deleted message...', 2000);
 				}
 			}
-		},
-
-		peek: function (reply, parent, text) {
+		};
+		
+		/*
+		 * Previews a message above the currently selected message
+		 */
+		this.peek = peek;
+		
+		function peek(reply, parent, text) {
 			if ((reply = $('#message-' + reply + '.easy-navigation-selected')).length) {
 				$('<div class="easy-navigation-peekable"></div>')
 					.append('<div class="easy-navigation-peeked-message"><span class="easy-navigation-subtle">Referenced message<span class="reference-id">#' + parent + '</span></span>' + text + '</div>')
@@ -436,22 +1053,35 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 					.data('reply', reply.attr('id'))
 					.appendTo(document.body);
 
-				Navigation.update();
+				update();
 			}
-		},
-
-		suppress: function (event) {
-			if (Navigation._active && Navigation.handles((event.which < 123 && event.which > 96 ? event.which - 32 : event.which), isCtrl(event))) {
+		}
+		
+		/*
+		 * Hides the message preview, if present
+		 */
+		this.unpeek = unpeek;
+		
+		function unpeek() {
+			$('.easy-navigation-peekable').remove();
+		}
+		
+		/*
+		 * Suppresses events that the keyboard navigation will handle
+		 */
+		this.suppress = function (event) {
+			if (active && handles((event.which < 123 && event.which > 96 ? event.which - 32 : event.which))) {
 				event.stopImmediatePropagation();
 				event.preventDefault();
 			}
-		},
-
-		unpeek: function () {
-			$('.easy-navigation-peekable').remove();
-		},
-
-		update: function () {
+		}
+		
+		/*
+		 * Updates the position of the preview box, necessary when content is added / removed from the page
+		 */
+		this.update = update;
+		
+		function update() {
 			var peekable = $('body > .easy-navigation-peekable'),
 				reply,
 				scrollTopOffset = $(document).scrollTop(),
@@ -469,95 +1099,193 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 				}
 			}
 		}
-	};
-
-	var Selectors = {
-		getMessage: function getMessage(id) {
-			validateArgs(1, ["number"]);
-			return "#message-" + id;
-		},
-		getSignature: function getSignature(match) {
-			validateArgs(1, ["string"]);
-			return "#.signature:contains('" + match + "') ~ .messages";
-		},
-		getRoom: function getRoom(match) {
-			return "#my-rooms > li > a[href^='/rooms']:contains('" + match + "')";
+		
+		/*
+		 * Returns the action object associated with this event, if any
+		 */
+		function handles(key) {
+			if (key && !isNumber(key))
+				key = key.which;
+		
+			return key ? actions[key] : null;
 		}
-	};
+	}
+	
+	/*
+	 * Validates the arguments passed to the calling method based on the passed parameters
+	 */
+	function validate(length, types) {
+		if (arguments.length == 1 && typeof(length) === 'string')
+			length = (types = [length]).length;
+		
+		if (!length)
+			length = 0;
+	
+		var args = validate.caller.arguments;
 
-	function Storage(name) {
-		this.storageName = (name || window.location.pathname + 'chatHighlights');
-		this.items = [];
+		// Verify that there are the expected number of arguments
+		if (length !== args.length)
+			throw new Error("Expected " + length + " args to " + validate.caller.name + " but received " + args.length);
 
-		if (localStorage[this.storageName] != null) {
-			this.items = JSON.parse(localStorage[this.storageName]);
-		} else {
-			this.items = [];
-		}
+		if (types) {
+			// Iterate over the expected types
+			for (var i = 0; i < args.length; ++i) {
+				var actual = typeof(args[i]);
+				var expected = types[i];
 
-		this.add = function (match) {
-			if ($.inArray(match, this.items) < 0) {
-				this.items.push(match);
-				localStorage[this.storageName] = JSON.stringify(this.items);
+				if (expected === 'number' && isNumber(args[i]))
+					actual = 'number';
+
+				if (actual !== expected)
+					throw new Error("Parameter " + i + " should have type " + expected + " but has type " + actual);
 			}
-		};
-
-		this.remove = function (match) {
-			this.items.splice($.inArray(match, this.items), 1);
-			localStorage[this.storageName] = JSON.stringify(this.items);
-		};
-	};
-
-	var highlightStore = new Storage(),
-		clipping = new Storage('chatClips');
-
-	setInterval(function () {
-		if (localStorage[clipping.storageName] != null) {
-			clipping.items = JSON.parse(localStorage[clipping.storageName]);
-		} else {
-			clipping.items = [];
-		}
-	}, 2500);
-
-	//factor out highlighting stuff to avoid repeating myself
-	function getHighlightSelector(match) {
-		if (isNumber(match)) {
-			return Selectors.getMessage(match);
-		} else {
-			return Selectors.getSignature(match);
 		}
 	}
-	function addhl(match) {
-		var selector = getHighlightSelector(match);
-		$(selector).livequery(function () {
-			$(this).addClass("highlight");
-		});
-	}
-	function delhl(match) {
-		var selector = getHighlightSelector(match);
-		$(selector).expire().removeClass("highlight");
+
+	/*
+	 * Determines if the given argument is numeric
+	 */
+	function isNumber(n) {
+		return !isNaN(parseInt(n, 10)) && isFinite(n);
 	}
 
-	function getCommandList() {
-		var ul = $('<ul />').addClass('gm_room_list');
-		var cmds = [];
-		for (var c in commands) cmds.push(c); //convert to array for sort to alphabetical order
-		cmds.sort();
-		for (var i = 0; i < cmds.length; i++) {
-			(function (current) {
-				$('<a />').click(function () {
-					$('#input').val('/' + current).focus();
-					return false;
-				}).attr('href', '#')
-			  .text(current)
-			  .wrap('<li />')
-			  .parent()
-			  .appendTo(ul);
-			})(cmds[i]);
+	/*
+	 * Determines if the ctrl or command key was pressed
+	 */
+	function isCtrl(event) {
+		return event && (event.ctrlKey || (!event.altKey && event.metaKey));
+	}
+	
+	/*
+	 * Returns an unordered HTML list with the currently available commands
+	 */
+	function getCommands() {
+		var ul = $('<ul class="gm_room_list" />'),
+			commands = [];
+
+		// Put the command names into an array for sorting
+		for (var command in Commands)
+			commands.push(command);
+		commands.sort();
+
+		// Iterate over the list of commands
+		for (var i = 0; i < commands.length; ++i) {
+			(function(command) {
+				$('<a href="#" />').click(function () {
+						$('#input').val('/' + command).focus();
+
+						return false;
+					})
+					.text(command)
+					.wrap('<li />')
+					.parent()
+					.appendTo(ul);
+			})(commands[i]);
 		}
+		
 		return ul;
 	}
 
+	/*
+	 * Returns a URL to the given site
+	 */
+	function matchSite(site, prefix) {
+		site = site.toLowerCase();
+		
+		var result = '', first, rest;
+		
+		if (!prefix)
+			prefix = '';
+			
+		if (site.indexOf('meta') === 0 && site !== 'meta') {
+			site = site.substring(4);
+			
+			if (site.indexOf('.') === 0)
+				site = site.substring(1);
+				
+			prefix = prefix + 'meta.';
+		}
+		
+		first = site.substring(0, 1);
+		rest = site.substring(1);
+		
+		switch (first) {
+			case '8':
+				if (rest == 'bitlavapwnpwniebossstagesixforhelp')
+					result = 'gaming.stackexchange.com';
+			case 'a':
+			case 'u':
+				if (rest == 'u' || rest == 'skubuntu' || rest == 'buntu')
+					result = 'askubuntu.com';
+				break;
+			case 'm':
+				if (rest == 'so' || 'eta')
+					result = 'meta.stackoverflow.com';
+				break;
+			case 'n':
+			case 'w':
+				if (rest == 'ti' || rest == 'othingtoinstall' || rest == 'a')
+					result = 'webapps.stackexchange.com';
+				break;
+			case 'o':
+				if (rest == 'nstartups')
+					result = 'answers.onstartups.com';
+				break;
+			case 'p':
+				if (rest == 'so' || rest == '.so' || rest == 'rogrammer')
+					result = 'programmers.stackexchange.com';
+				break;
+			case 's':
+				if (rest == 'o' || rest == 'tackoverflow')
+					result = 'stackoverflow.com';
+				else if (rest == 'f' || rest == 'erverfault')
+					result = 'serverfault.com';
+				else if (rest == 'u' || rest == 'uperuser')
+					result = 'superuser.com';
+				else if (rest == 'a' || rest == 'easonedadvice')
+					result = 'cooking.stackexchange.com';
+				break;
+			case 't':
+				if (rest == 'cs' || rest == 'heory')
+					result = 'cstheory.stackexchange.com';
+				break;
+			default:
+				result = site + '.stackexchange.com';
+				break;
+		}
+		
+		return 'http://' + prefix + result;
+	}
+
+	/*
+	 * Gets the appropriate highlight selector based on the argument type
+	 */
+	function getHighlightSelector(match) {
+		if (isNumber(match))
+			return Selectors.getMessage(match);
+			
+		return Selectors.getSignature(match);
+	}
+	
+	/*
+	 * Adds highlighting to the matched elements
+	 */
+	function addHighlight(match) {
+		$(getHighlightSelector(match)).livequery(function () {
+			$(this).addClass('highlight');
+		});
+	}
+	
+	/*
+	 * Removes highlighting from the match elements
+	 */
+	function removeHighlight(match) {
+		$(getHighlightSelector(match)).expire().removeClass('highlight');
+	}
+	
+	/*
+	 * Creates a clip item
+	 */
 	function createClipItem(index, room, display, hide) {
 		var html = index + '. <em>' + room + '</em>';
 
@@ -604,689 +1332,429 @@ with_plugin("http://stackflair.com/jquery.livequery.js", function ($) {
 
 		return li;
 	}
-
-	var CommandState = { "NotFound": -1, "Failed": 0, "SucceededDoClear": 1, "SucceededNoClear": 2 };
-	var commands = {
-		star: function (id) {
-			validateArgs(1, ["number"]);
-			var star = $(Selectors.getMessage(id) + " .stars .img")[0];
-			$(star).click();
-			return CommandState.SucceededDoClear;
+	
+	// Define all of the styles
+	// TS: We might want to break this into smaller pieces
+	ChatExtension.style({
+		'.gm_room_list': {
+			'list-style': 'none',
+			'text-align': 'left',
+			'font-size': '11px',
+			'padding': '10px',
+			'margin': '0',
+			'min-width': '540px'
 		},
-		flag: function (id) {
-			validateArgs(1, ["number"]);
-			var flag = $(Selectors.getMessage(id) + " .flags .img")[0];
-			$(flag).click();
-			return CommandState.SucceededDoClear;
+		'.gm_room_list li': {
+			'float': 'left',
+			'width': '33%'
 		},
-		quote: function (id) {
-			validateArgs(1, ["number"]);
-			$("#input").val("http://" + window.location.host + "/transcript/message/" + id + "#" + id);
-			$("#sayit-button").click();
+		'.gm_room_list li a': {
+			'display': 'block',
+			'padding': '4px 8px'
 		},
-		"switch": function (match) {
-			$('#input').val('');
-
-			validateArgs(1, ["string"]);
-			var selector = Selectors.getRoom(match);
-			var rooms = $(selector);
-			if (rooms.length == 1) {
-				window.location = $(rooms[0]).attr("href");
-			} else {
-				throw new Error("Unable to find single match");
-			}
-			return CommandState.SucceededDoClear;
+		'.gm_room_list li a:hover': {
+			'background-color': '#eee',
+			'text-decoration': 'none'
 		},
-		transcript: function (match) {
-			if (!match) {
-				var transcript = $("a.button[href^=/transcript]")[0];
-				var href = transcript.href;
-				window.open(href);
-			} else {
-				var searchField = $("input#searchbox");
-				var searchForm = searchField.parent("form");
-				var href = searchForm.attr('action');
-				var fieldName = searchField.attr('name');
-				var roomID = $("input[name='room']", searchForm).val();
-				window.open(href + "?room=" + roomID + "&" + fieldName + "=" + escape(match));
-			}
-			return CommandState.SucceededDoClear;
+		'.gm_room_list.profile li img': {
+			'margin-right': '4px'
 		},
-		load: function () {
-			validateArgs(0);
-			var getMore = $('#getmore');
-			var m = $(".message")[0];
-			getMore.data("events").click[0].handler(function () {
-				$(document).scrollTo(m, 400);
-			});
-			return CommandState.SucceededDoClear;
+		'.clips_list': {
+			'list-style': 'none',
+			'text-align': 'left',
+			'font-size': '11px',
+			'padding': '8px 14px',
+			'margin': '0'
 		},
-		me: function () {
-			// don't validate, just send the output
-			$("#input").val("*" + $.trim($.makeArray(arguments).join(" ")) + "*");
-			$("#sayit-button").click();
-			return CommandState.SucceededDoClear;
+		'.clips_list li': {
+			'padding': '8px 20px',
+			'border-bottom': '1px dashed #999',
+			'cursor': 'pointer',
+			'overflow': 'hidden',
+			'position': 'relative'
 		},
-		hl: function (match) {
-			if (typeof match == 'undefined') {  //no parameters = show list
-				var ul = $('<ul />').addClass('gm_room_list');
-
-				if (highlightStore.items.length > 0) {
-					for (var i = 0; i < highlightStore.items.length; i++) {
-						(function (current) {
-							$('<a />').click(function () {
-								$('#input').val('/hl ' + current).focus();
-								return false;
-							}).attr('href', '#')
-								.text(current)
-								.wrap('<li />')
-								.parent()
-								.appendTo(ul);
-						})(highlightStore.items[i]);
-					}
-				} else {
-					ul = $('<p />').text('Currently there are no highlighted users or messages');
-				}
-
-				showNotification(ul, 10E3);
-			} else { //if already in list, remove - else add
-				match = $.makeArray(match).join(" ");
-				if ($.inArray(match, highlightStore.items) >= 0) {
-					highlightStore.remove(match);
-					delhl(match);
-				} else {
-					highlightStore.add(match);
-					addhl(match);
-				}
-			}
-
-			return CommandState.SucceededDoClear;
+		'.clips_list li:hover': {
+			'background-color': '#efefef'
 		},
-		last: function (match) {
-			match = $.makeArray(match).join(" ");
-			var m = $(Selectors.getSignature(match)).last();
-			if (m.length) {
-				m.addClass("highlight");
-				window.setTimeout(function () {
-					m.removeClass("highlight");
-				}, 2000);
-				$.scrollTo(m, 200);
-			} else {
-				showNotification('Last message cannot be found. Try /load more messages.', 2000)
-			}
-
-			return CommandState.SucceededDoClear;
+		'.clips_list li div.cl_commands': {
+			'position': 'absolute',
+			'top': '5px',
+			'right': '5px',
+			'display': 'none',
+			'border': '1px solid #ccc'
 		},
-		list: function (match) {
-			$.get('/', {
-				'tab': 'all',
-				'sort': 'active',
-				'page': 1,
-				'filter': match
-			}, function (data) {
-				var ul = $('<ul />').addClass('gm_room_list'),
-					page = $(data),
-					pageCount = page.filter('.pager').find('a').length;
-
-				function processPage() {
-					var room = $(this).find('h3 .room-name');
-					var href = room.find("a").attr("href");
-
-					var id = this.id.substring(this.id.indexOf('-') + 1);
-
-					$('<a />').attr({
-						'href': href,
-						'target': '_self'
-					}).text(id + " - " + room.attr("title"))
-						.wrap('<li />')
-						.parent()
-						.appendTo(ul);
-				}
-
-				page.filter(".roomcard").each(processPage);
-
-				if (pageCount >= 2) {
-					for (var i = 2; i <= pageCount; i++) {
-						$.get('/', {
-							'tab': 'all',
-							'sort': 'active',
-							'page': i,
-							'filter': match
-						}, function (data) {
-							$(data).filter(".roomcard").each(processPage);
-							if (i >= pageCount) { showNotification(ul, 10E3); }
-						});
-					}
-				} else {
-					showNotification(ul, 10E3);
-				}
-			});
-
-			return CommandState.SucceededDoClear;
+		'.clips_list li:hover div.cl_commands': {
+			'display': 'block'
 		},
-		join: function (id) {
-			$('#input').val('');
-
-			validateArgs(1, ["number"]);
-			window.location = "/rooms/" + id;
-			return CommandState.SucceededDoClear;
+		'.clips_list li div.cl_commands a': {
+			'display': 'inline-block',
+			'padding': '2px 4px 3px',
+			'background-color': '#efefef'
 		},
-		edit: function (id) {
-			if (id == null) {
-				id = $(".user-container.mine:last .message:last").attr("id").replace("message-", "");
-			} else {
-				validateArgs(1, ["number"]);
-			}
-			var elements = $(Selectors.getMessage(id) + " .action-link").click().closest('.message').find('.edit').click();
-			if (elements.length !== 1) {
-				throw new Error("Unable to edit message.");
-			}
-			return CommandState.SucceededNoClear;
+		'span.action_clip': {
+			'display': 'inline-block',
+			'height': '11px',
+			'width': '12px',
+			'margin-right': '3px',
+			'padding': '0',
+			'background': '1px 0px url("http://or.sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
+			'cursor': 'pointer'
 		},
-		del: function (id) {
-			if (id == null) {
-				id = $(".user-container.mine:last .message:last").attr("id").replace("message-", "");
-			} else {
-				validateArgs(1, ["number"]);
-			}
-			var elements = $(Selectors.getMessage(id) + " .action-link").click().closest(".message").find(".delete").click();
-			if (elements.length !== 1) {
-				throw new Error("Unable to delete message.");
-			}
-			return CommandState.SucceededDoClear;
+		'#chat-body .monologue.mine .message:hover .meta': {
+			'display': 'inline-block !important'
 		},
-		leave: function (match) {
-			$('#input').val('');
-
-			if (!match) {
-				// No argument - Leave current room
-				$('#leave').click();
-			} else if (isNumber(match)) {
-				// Numerals - Leave room id
-				$('#room-' + match).children('.quickleave').click();
-			} else if (match.toLowerCase() === 'all') {
-				// all - Leave all rooms
-				$('#leaveall').click();
-			} else {
-				// String - leave room containing string
-				$(Selectors.getRoom(match) + "~ .quickleave").click();
-			}
-			return CommandState.SucceededDoClear;
+		'#chat-body .monologue.mine .message .meta .vote-count-container': {
+			'display': 'none !important'
 		},
-		profile: function () {
-			match = $.makeArray(arguments).slice(1).join(" ");
-			var url = matchSite(arguments[0], 'api.') + '/1.0/users/',
-				currentSite = matchSite(arguments[0]);
-
-			$.ajax({
-				'url': url,
-				dataType: 'jsonp',
-				jsonp: 'jsonp',
-				data: {
-					filter: match,
-					pagesize: 50
-				},
-				cache: true,
-				success: function (data) {
-					var response = '';
-
-					function buildOb(data) {
-						var ob = $('<div />').css({
-							textAlign: 'left',
-							padding: '10px 20px 20px',
-							overflow: 'hidden'
-						}),
-							userInfo = $('<div />').css('float', 'left').appendTo(ob),
-							title = $('<div />').text(', ' + data.location).appendTo(userInfo),
-							stat = $('<div />').appendTo(userInfo),
-							name = data.display_name + (data.user_type === 'moderator' ? ' ♦' : '');
-
-						$('<a />').attr('href', currentSite + '/users/' + data.user_id)
-							.addClass('ob-user-username')
-							.text(name)
-							.prependTo(title);
-
-						// repNumber: Chat function for displaying rep - adds in k for 10k+ reps
-						$('<span />').addClass('reputation-score').text(repNumber(data.reputation)).appendTo(stat);
-
-						$('<img />').css({
-							float: 'left',
-							marginRight: 10
-						}).attr({
-							src: 'http://www.gravatar.com/avatar/' + data.email_hash + '?s=64&d=identicon',
-							alt: ''
-						}).prependTo(ob);
-
-						$.ajax({
-							'url': url + data.user_id + '/tags',
-							dataType: 'jsonp',
-							jsonp: 'jsonp',
-							data: {
-								pagesize: 8
-							},
-							cache: true,
-							success: function (data) {
-								var wrapper = $('<div />').appendTo(userInfo).css('margin-top', 4);
-								for (var i = 0; i < data.tags.length; i++) {
-									var outer = $('<a />')
-										.attr('href', currentSite + '/tagged/' + data.tags[i].name)
-										.appendTo(wrapper).css('text-decoration', 'none');
-
-									$('<span />')
-										.addClass('ob-user-tag')
-										.text(data.tags[i].name)
-										.appendTo(outer)
-										.css({
-											borderStyle: 'solid',
-											marginRight: 5
-										});
-								}
-							}
-						});
-
-						var badgeN = 1;
-						for (var i in data.badge_counts) {
-							$('<span />').addClass('badge' + badgeN++).appendTo(stat);
-							$('<span />').addClass('badgecount').text(data.badge_counts[i]).appendTo(stat);
-						}
-
-						return ob;
-					}
-
-					if (data.total === 0) {
-						response = $('<p />').text('There are no user that match your search');
-					} else if (data.total === 1) {
-						$('#input').val(currentSite + '/users/' + data.users[0].user_id);
-						response = buildOb(data.users[0]);
-					} else {
-						response = $('<ul />').addClass('gm_room_list profile');
-
-						for (var i = 0; i < data.users.length; i++) {
-							(function (current) {
-								var anchor = $('<a />').click(function () {
-									$('#input').val(currentSite + '/users/' + current.user_id);
-									showNotification(buildOb(current), 10E3);
-									return false;
-								}).attr('href', '#')
-									.text(' ' + current.reputation)
-									.wrap('<li />');
-
-								$('<strong />').text(current.display_name + (current.user_type === 'moderator' ? ' ♦' : '')).prependTo(anchor);
-
-								$('<img />').attr({
-									src: 'http://www.gravatar.com/avatar/' + current.email_hash + '?s=14&d=identicon',
-									alt: ''
-								}).prependTo(anchor);
-
-								anchor.parent().appendTo(response);
-							})(data.users[i]);
-						}
-
-						if (data.total > 50) {
-							$('<li />').append($('<h3 />').text('Your query returned too many results. Currently showing the top 50 sorted by reputation')).prependTo(response);
-						}
-					}
-
-					showNotification(response, 10E3);
-				}
-			});
-
-			return CommandState.SucceededDoClear;
+		'#chat-body .monologue.mine .message .meta .action_clip': {
+			'margin-right': '0px;'
 		},
-
-		jot: function () {
-			var insert, display;
-
-			if (isNumber(arguments[0])) {
-				validateArgs(1, ['number']);
-				insert = 'http://' + window.location.hostname + '/transcript/message/' + arguments[0];
-				var content = $(Selectors.getMessage(arguments[0]));
-
-				if (content.length !== 1) {
-					throw new Error("The message you're trying to jot down cannot be found");
-				}
-
-				display = content.find('.content').html();
-			} else {
-				insert = $.makeArray(arguments).join(' ');
-				display = insert;
-
-				if (insert === '') {
-					throw new Error('You have not entered anything to be jotted down');
-				}
-			}
-
-			clipping.add({
-				'display': display,
-				'insert': insert,
-				'room': $('#roomname').text()
-			});
-
-			showNotification($('<ul />').append(createClipItem(clipping.items.length - 1, $('#roomname').text(), display, false)).addClass('clips_list'), 10E3);
-
-			return CommandState.SucceededDoClear;
+		'.easy-navigation-selected': {
+			'-moz-border-radius': '4px 4px 4px 4px',
+			'background-color': '#D2F7D0',
+			'border-radius': '4px 4px 4px 4px',
+			'margin-left': '5px',
+			'padding-left': '15px !important'
 		},
-
-		clips: function () {
-			validateArgs(0);
-
-			var ul = $('<ol />').addClass('clips_list');
-
-			for (var i = 0; i < clipping.items.length; i++) {
-				createClipItem(i, clipping.items[i].room, clipping.items[i].display, true).appendTo(ul);
-			}
-
-			showNotification(ul, 10E3);
-			return CommandState.SucceededDoClear;
+		'.easy-navigation-peekable': {
+			'-moz-border-radius': '4px 4px 4px 4px',
+			'background-color': '#000000',
+			'border-radius': '4px 4px 4px 4px',
+			'color': '#F0F0F0',
+			'margin-top': '5px',
+			'padding-right': '0px !important',
+			'position': 'absolute',
+			'z-index': '4'
 		},
-
-		paste: function (id) {
-			validateArgs(1, ['number']);
-
-			$('#input').val(clipping.items[id].insert);
-			$('#sayit-button').click();
-
-			return CommandState.SucceededDoClear;
+		'.easy-navigation-peekable .onebox': {
+			'color': '#000000'
 		},
-
-		rmclip: function (id) {
-			validateArgs(1, ['number']);
-
-			clipping.remove(clipping.items[id]);
-
-			return CommandState.SucceededDoClear;
+		'.easy-navigation-peeked-message': {
+			'line-height': '1.5em',
+			'padding': '3px 10px 4px 15px'
 		},
-
-		ob: function (url) {
-			validateArgs(1, ['string']);
-			url = url.replace(/https?:\/\/(www.)?/, '');
-
-			if (url.indexOf('vimeo.com') > -1) {
-				var id;
-
-				if (url.match(/^vimeo.com\/[0-9]+/)) {
-					id = url.split('/')[1];
-				} else if (url.match(/^vimeo.com\/channels\/[\d\w]+#[0-9]+/)) {
-					id = url.split('#')[1];
-				} else if (url.match(/vimeo.com\/groups\/[\d\w]+\/videos\/[0-9]+/)) {
-					id = url.split('/')[4];
-				} else {
-					throw new Error('Unsupported Vimeo URL');
-				}
-
-				$.ajax({
-					url: 'http://vimeo.com/api/v2/video/' + id + '.json',
-					dataType: 'jsonp',
-					success: function (data) {
-						// Drop in small preview frame
-						$('#input').val(data[0].thumbnail_large);
-						$('#sayit-button').click();
-
-						// Wait a bit before dropping in the video title
-						(function (title, url, name) {
-							setTimeout(function () {
-								$('#input').val('[▶ Watch **' + title + '** by ' + name + ' on Vimeo](' + url + ')');
-								$('#sayit-button').click();
-							}, 400);
-						})(data[0].title, data[0].url, data[0].user_name);
-					}
-				});
-			}
+		'.easy-navigation-peeked-message .mention': {
+			'color': '#000000'
 		},
-		history: function (id) {
-			validateArgs(1, ["number"]);
-			$("<div>").addClass("gm_room_list").load("/messages/" + id + "/history #content", function () {
-				showNotification(this, 10E3);
-			});
-			return CommandState.SucceededDoClear;
+		'.easy-navigation-subtle': {
+			'color': '#D2F7D0',
+			'display': 'block',
+			'font-size': '10px'
 		},
-		update: function () {
-			validateArgs(0);
-			try {
-				window.location = "http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js";
-			} catch (e) { if (console) console.log(e) } //do nothing, swallow 'Unknown exception 0x805e000a'
-			return CommandState.SucceededDoClear;
-		},
-		help: function () {
-			var ul = getCommandList();
-			ul = $(ul).before($('<span/>').text('List of recognised commands:'));
-			showNotification(ul, 10E3);
-			return CommandState.SucceededDoClear;
-		},
-		
-		jump: function(id) {
-			validateArgs(1, ["number"]);
-			var message = $('#message-' + id);
+		'.easy-navigation-subtle .reference-id': {
+			'float': 'right',
+			'margin-right': '5px'
+		}
+	});
+});
+
+/*
+ * Actas as a container for some additional selector expressions
+ */
+function expressions($) {
+	$.expr[':'].contains = function (a, i, m) {
+		return jQuery(a).text().toUpperCase().indexOf(m[3].toUpperCase()) >= 0;
+	};
+
+	$.expr[':'].regex = function (elem, index, match) {
+		var matchParams = match[3].split(','),
+			validLabels = /^(data|css):/,
+			attr = {
+				method: matchParams[0].match(validLabels) ? matchParams[0].split(':')[0] : 'attr',
+				property: matchParams.shift().replace(validLabels, '')
+			},
+			regexFlags = 'ig',
+			regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g, ''), regexFlags);
 			
-			if (message.length) {
-				Navigation.deselect();
-				Navigation.select(message);
+		return regex.test(jQuery(elem)[attr.method](attr.property));
+	};
+}
 
-				$(document).scrollTop(message.offset().top - 5);
-			} else {
-				window.open('http://' + window.location.host + '/transcript/message/' + id + '#' + id);
+/*
+ * Acts as a container for the bindAs implementation
+ */
+function bindas($) {
+	$.fn.extend({
+		bindAs: function (nth, type, data, fn) {
+			if (typeof type == 'object') {
+				for (var key in type) {
+					this.bindAs(nth, key, data, type[key], fn);
+				}
+				
+				return this;
+			}
+
+			if (type.indexOf(' ') > -1) {
+				var s = type.split(' ');
+
+				for (var i = 0; i < s.length; ++i) {
+					this.bindAs(nth, s[i], data, fn);
+				}
+				
+				return this;
+			}
+
+			if ($.isFunction(data) || data === false) {
+				fn = data;
+				data = undefined;
+			}
+
+			if (nth < 0) {
+				nth = 0;
+			}
+
+			for (var i = 0; i < this.length; ++i) {
+				var elem = this[i];
+
+				$.event.add(elem, type, fn, data);
+
+				var elemData = jQuery.data(elem);
+				var eventKey = elem.nodeType ? 'events' : '__events__';
+				var events = elemData[eventKey];
+
+				if (events && typeof events === 'function') {
+					events = events.events;
+				}
+
+				if (events) {
+					var handlers = events[type];
+
+					if (handlers && handlers.length > nth + 1) {
+						handlers.splice(nth, 0, handlers.splice(handlers.length - 1, 1)[0]);
+					}
+				}
+			}
+
+			return this;
+		}
+	});
+}
+
+/*
+ * Acts a container for the livequery plugin, which is used by this userscript to perform certain functions
+ */
+function livequery($) {
+	/*! Copyright (c) 2010 Brandon Aaron (http://brandonaaron.net)
+	 * Dual licensed under the MIT (MIT_LICENSE.txt)
+	 * and GPL Version 2 (GPL_LICENSE.txt) licenses.
+	 *
+	 * Version: 1.1.1
+	 * Requires jQuery 1.3+
+	 * Docs: http://docs.jquery.com/Plugins/livequery
+	 */
+
+	$.extend($.fn, {
+		livequery: function(type, fn, fn2) {
+			var self = this, q;
+
+			// Handle different call patterns
+			if ($.isFunction(type))
+				fn2 = fn, fn = type, type = undefined;
+
+			// See if Live Query already exists
+			$.each( $.livequery.queries, function(i, query) {
+				if ( self.selector == query.selector && self.context == query.context &&
+					type == query.type && (!fn || fn.$lqguid == query.fn.$lqguid) && (!fn2 || fn2.$lqguid == query.fn2.$lqguid) )
+						// Found the query, exit the each loop
+						return (q = query) && false;
+			});
+
+			// Create new Live Query if it wasn't found
+			q = q || new $.livequery(this.selector, this.context, type, fn, fn2);
+
+			// Make sure it is running
+			q.stopped = false;
+
+			// Run it immediately for the first time
+			q.run();
+
+			// Contnue the chain
+			return this;
+		},
+
+		expire: function(type, fn, fn2) {
+			var self = this;
+
+			// Handle different call patterns
+			if ($.isFunction(type))
+				fn2 = fn, fn = type, type = undefined;
+
+			// Find the Live Query based on arguments and stop it
+			$.each( $.livequery.queries, function(i, query) {
+				if ( self.selector == query.selector && self.context == query.context &&
+					(!type || type == query.type) && (!fn || fn.$lqguid == query.fn.$lqguid) && (!fn2 || fn2.$lqguid == query.fn2.$lqguid) && !this.stopped )
+						$.livequery.stop(query.id);
+			});
+
+			// Continue the chain
+			return this;
+		}
+	});
+
+	$.livequery = function(selector, context, type, fn, fn2) {
+		this.selector = selector;
+		this.context  = context;
+		this.type     = type;
+		this.fn       = fn;
+		this.fn2      = fn2;
+		this.elements = [];
+		this.stopped  = false;
+
+		// The id is the index of the Live Query in $.livequery.queries
+		this.id = $.livequery.queries.push(this)-1;
+
+		// Mark the functions for matching later on
+		fn.$lqguid = fn.$lqguid || $.livequery.guid++;
+		if (fn2) fn2.$lqguid = fn2.$lqguid || $.livequery.guid++;
+
+		// Return the Live Query
+		return this;
+	};
+
+	$.livequery.prototype = {
+		stop: function() {
+			var query = this;
+
+			if ( this.type )
+				// Unbind all bound events
+				this.elements.unbind(this.type, this.fn);
+			else if (this.fn2)
+				// Call the second function for all matched elements
+				this.elements.each(function(i, el) {
+					query.fn2.apply(el);
+				});
+
+			// Clear out matched elements
+			this.elements = [];
+
+			// Stop the Live Query from running until restarted
+			this.stopped = true;
+		},
+
+		run: function() {
+			// Short-circuit if stopped
+			if ( this.stopped ) return;
+			var query = this;
+
+			var oEls = this.elements,
+				els  = $(this.selector, this.context),
+				nEls = els.not(oEls);
+
+			// Set elements to the latest set of matched elements
+			this.elements = els;
+
+			if (this.type) {
+				// Bind events to newly matched elements
+				nEls.bind(this.type, this.fn);
+
+				// Unbind events to elements no longer matched
+				if (oEls.length > 0)
+					$.each(oEls, function(i, el) {
+						if ( $.inArray(el, els) < 0 )
+							$.event.remove(el, query.type, query.fn);
+					});
+			}
+			else {
+				// Call the first function for newly matched elements
+				nEls.each(function() {
+					query.fn.apply(this);
+				});
+
+				// Call the second function for elements no longer matched
+				if ( this.fn2 && oEls.length > 0 )
+					$.each(oEls, function(i, el) {
+						if ( $.inArray(el, els) < 0 )
+							query.fn2.apply(el);
+					});
 			}
 		}
 	};
 
-	$(function () {
-		var input = $("#input")
-		var page = $(document);
+	$.extend($.livequery, {
+		guid: 0,
+		queries: [],
+		queue: [],
+		running: false,
+		timeout: null,
 
-		// ctrl+space retry
-		page.bindAs(0, 'keydown', function (evt) {
-			if (evt.which == 32 && isCtrl(evt)) {
-				var value = input.val();
-
-				// This apparently removes the input's text
-				$(".message.pending:first a:contains(retry)").click();
-
-				input.val(value);
-
-				return false;
+		checkQueue: function() {
+			if ( $.livequery.running && $.livequery.queue.length ) {
+				var length = $.livequery.queue.length;
+				// Run each Live Query currently in the queue
+				while ( length-- )
+					$.livequery.queries[ $.livequery.queue.shift() ].run();
 			}
-		});
+		},
 
-		// show the message ids on each 
-		$(".message:not(.pending):not(.posted)").livequery(function () {
-			var id = this.id.replace("message-", "");
+		pause: function() {
+			// Don't run anymore Live Queries until restarted
+			$.livequery.running = false;
+		},
 
-			if (!$(this).siblings('#id-' + id).length) {
-				var timestamp = new Date($(this).data().info.time * 1000);
-				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
-				$(this).prev(".timestamp").remove();
-				$('<div />').insertBefore(this)
-					.text(id + ' ' + timestamp)
-					.addClass('timestamp')
-					.attr('id', 'id-' + id);
-			}
-		});
+		play: function() {
+			// Restart Live Queries
+			$.livequery.running = true;
+			// Request a run of the Live Queries
+			$.livequery.run();
+		},
 
-		// handle commands
-		input.bindAs(0, 'keydown', function (evt) {
-			if (evt.which == 13 && input.val().substring(0, 1) == "/") {
-				if (input.val().substring(1, 2) == "/") { //double slash to escape commands
-					input.val(input.val().substring(1));  //remove the escaping slash
-				} else {
-					var args = input.val().split(" ");
-					var cmd = args[0].substring(1);
-					args = Array.prototype.slice.call(args, 1);
-					var returnVal = false;
-					returnVal = execute(cmd, args);
-					if (returnVal == CommandState.SucceededDoClear) {
-						input.val("");
-					}
-					if (returnVal == CommandState.NotFound) {
-						var ul = getCommandList();
-						ul = $(ul).before($('<span/>').text('Unknown command, try again, or use // to escape commands.'));
-						showNotification(ul, 10E3);
-					}
-					//Prevent propagation whether command is found or not
-					evt.preventDefault();
-					evt.stopImmediatePropagation();
-					evt.stopPropagation();
-					evt.cancelBubble = true;
-					return false;
+		registerPlugin: function() {
+			$.each( arguments, function(i,n) {
+				// Short-circuit if the method doesn't exist
+				if (!$.fn[n]) return;
+
+				// Save a reference to the original method
+				var old = $.fn[n];
+
+				// Create a new method
+				$.fn[n] = function() {
+					var jQuery = $;
+					// Call the original method
+					var r = old.apply(this, arguments);
+
+					// Request a run of the Live Queries
+					jQuery.livequery.run();
+
+					// Return the original methods result
+					return r;
 				}
-			}
-		});
+			});
+		},
 
-		// Persistant highlighting Restoration
-		for (var i = 0; i < highlightStore.items.length; i++) {
-			addhl(highlightStore.items[i]);
+		run: function(id) {
+			if (id != undefined) {
+				// Put the particular Live Query in the queue if it doesn't already exist
+				if ( $.inArray(id, $.livequery.queue) < 0 )
+					$.livequery.queue.push( id );
+			}
+			else
+				// Put each Live Query in the queue if it doesn't already exist
+				$.each( $.livequery.queries, function(id) {
+					if ( $.inArray(id, $.livequery.queue) < 0 )
+						$.livequery.queue.push( id );
+				});
+
+			// Clear timeout if it already exists
+			if ($.livequery.timeout) clearTimeout($.livequery.timeout);
+			// Create a timeout to check the queue and actually run the Live Queries
+			$.livequery.timeout = setTimeout($.livequery.checkQueue, 20);
+		},
+
+		stop: function(id) {
+			if (id != undefined)
+				// Stop are particular Live Query
+				$.livequery.queries[ id ].stop();
+			else
+				// Stop all Live Queries
+				$.each( $.livequery.queries, function(id) {
+					$.livequery.queries[ id ].stop();
+				});
 		}
-
-		// Bind navigation controls
-		input.bindAs(0, 'keydown', Navigation.launch);
-		input.bindAs(0, 'focus', Navigation.deselect);
-		page.bindAs(0, 'click', Navigation.deselect);
-		page.bindAs(0, 'keydown', Navigation.navigate);
-		page.bindAs(0, 'keypress', Navigation.suppress);
-		$('.message').livequery(Navigation.update);
-
-		// Injecting Clipboard buttons
-		$('<button />')
-			.text('clipboard')
-			.addClass('button')
-			.appendTo('#chat-buttons')
-			.click(function () {
-				commands.clips();
-			});
-
-
-		$('.message').livequery(function () {
-			var c = this;
-
-			$('<span />').prependTo($(this).find('.meta')).addClass('action_clip').attr('title', 'add this message to my clipboard').click(function () {
-				commands.jot(c.id.substring(8));
-			});
-		});
-
-		// Style insertion, a la GM_addStyle, but using jQuery CSS syntax
-		(function (style_obj) {
-			var styleText = '';
-
-			for (var i in style_obj) {
-				styleText = styleText + i + '{';
-				for (var p in style_obj[i]) {
-					styleText = styleText + p + ':' + style_obj[i][p] + ';';
-				}
-				styleText = styleText + '}';
-			}
-
-			$('<style />').text(styleText).appendTo('head');
-		})(
-			{
-				'.gm_room_list': {
-					'list-style': 'none',
-					'text-align': 'left',
-					'font-size': '11px',
-					'padding': '10px',
-					'margin': '0',
-					'min-width': '540px'
-				},
-				'.gm_room_list li': {
-					'float': 'left',
-					'width': '33%'
-				},
-				'.gm_room_list li a': {
-					'display': 'block',
-					'padding': '4px 8px'
-				},
-				'.gm_room_list li a:hover': {
-					'background-color': '#eee',
-					'text-decoration': 'none'
-				},
-				'.gm_room_list.profile li img': {
-					'margin-right': '4px'
-				},
-				'.clips_list': {
-					'list-style': 'none',
-					'text-align': 'left',
-					'font-size': '11px',
-					'padding': '8px 14px',
-					'margin': '0'
-				},
-				'.clips_list li': {
-					'padding': '8px 20px',
-					'border-bottom': '1px dashed #999',
-					'cursor': 'pointer',
-					'overflow': 'hidden',
-					'position': 'relative'
-				},
-				'.clips_list li:hover': {
-					'background-color': '#efefef'
-				},
-				'.clips_list li div.cl_commands': {
-					'position': 'absolute',
-					'top': '5px',
-					'right': '5px',
-					'display': 'none',
-					'border': '1px solid #ccc'
-				},
-				'.clips_list li:hover div.cl_commands': {
-					'display': 'block'
-				},
-				'.clips_list li div.cl_commands a': {
-					'display': 'inline-block',
-					'padding': '2px 4px 3px',
-					'background-color': '#efefef'
-				},
-				'span.action_clip': {
-					'display': 'inline-block',
-					'height': '11px',
-					'width': '12px',
-					'margin-right': '3px',
-					'padding': '0',
-					'background': '1px 0px url("http://or.sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
-					'cursor': 'pointer'
-				},
-				'#chat-body .monologue.mine .message:hover .meta': {
-					'display': 'inline-block !important'
-				},
-				'#chat-body .monologue.mine .message .meta .vote-count-container': {
-					'display': 'none !important'
-				},
-				'#chat-body .monologue.mine .message .meta .action_clip': {
-					'margin-right': '0px;'
-				},
-				'.easy-navigation-selected': {
-					'-moz-border-radius': '4px 4px 4px 4px',
-					'background-color': '#D2F7D0',
-					'border-radius': '4px 4px 4px 4px',
-					'margin-left': '5px',
-					'padding-left': '15px !important'
-				},
-				'.easy-navigation-peekable': {
-					'-moz-border-radius': '4px 4px 4px 4px',
-					'background-color': '#000000',
-					'border-radius': '4px 4px 4px 4px',
-					'color': '#F0F0F0',
-					'margin-top': '5px',
-					'padding-right': '0px !important',
-					'position': 'absolute',
-					'z-index': '4'
-				},
-				'.easy-navigation-peekable .onebox': {
-					'color': '#000000'
-				},
-				'.easy-navigation-peeked-message': {
-					'line-height': '1.5em',
-					'padding': '3px 10px 4px 15px'
-				},
-				'.easy-navigation-peeked-message .mention': {
-					'color': '#000000'
-				},
-				'.easy-navigation-subtle': {
-					'color': '#D2F7D0',
-					'display': 'block',
-					'font-size': '10px'
-				},
-				'.easy-navigation-subtle .reference-id': {
-					'float': 'right',
-					'margin-right': '5px'
-				}
-			}
-		);
 	});
-});
+
+	// Register core DOM manipulation methods
+	$.livequery.registerPlugin('append', 'prepend', 'after', 'before', 'wrap', 'attr', 'removeAttr', 'addClass', 'removeClass', 'toggleClass', 'empty', 'remove', 'html');
+
+	// Run Live Queries when the Document is ready
+	$(function() { $.livequery.play(); });
+}
