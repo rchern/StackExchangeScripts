@@ -17,7 +17,7 @@ right side of each message beside the timestamp
 * `/quote` - quote the message whose id you pass, by posting a link to it
 * `/flag` - will flag the message as offensive, spam or noise
 * `/history` - displays the edit history of that message
-* `/jump` - scrolls to that message if it is 
+* `/jump` - scrolls to that message if it is available on the page
 
 `/edit` and `/delete` can only be performed during the two minute grace 
 period, after which the message is locked. The message id can be left 
