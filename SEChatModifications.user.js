@@ -108,6 +108,7 @@ inject(livequery, bindas, expressions, function ($) {
 				delay = 3000;
 
 			$('#inputerror').html(message)
+				.clearQueue()
 				.fadeIn("slow")
 				.delay(delay)
 				.fadeOut("slow")
@@ -125,6 +126,9 @@ inject(livequery, bindas, expressions, function ($) {
 				});
 		};
 		
+		/*
+		 * Adds styles to the userscript's <style> element, to simplify writing CSS styles for script-injected content
+		 */
 		this.style = function (styleObject) {
 			var userStyle = $('style#user-style'),
 				styleText = userStyle.length ? userStyle.text() : '';
@@ -213,7 +217,7 @@ inject(livequery, bindas, expressions, function ($) {
 		page.bindAs(0, 'click', Navigation.deselect);
 		page.bindAs(0, 'keydown', Navigation.navigate);
 		page.bindAs(0, 'keypress', Navigation.suppress);
-		$('.message').livequery(Navigation.update);
+		$('#chat .message').livequery(Navigation.update);
 		
 		// Add a handler to update clips across tabs
 		$(window).bindAs(0, 'focus', function (event) {
@@ -226,7 +230,7 @@ inject(livequery, bindas, expressions, function ($) {
 		}
 		
 		// Show the message ID and timestamp on each message
-		$(".message:not(.pending):not(.posted)").livequery(function () {
+		$("#chat .message:not(.pending):not(.posted)").livequery(function () {
 			var id = this.id.replace("message-", "");
 
 			if (!$(this).siblings('#id-' + id).length) {
@@ -245,10 +249,12 @@ inject(livequery, bindas, expressions, function ($) {
 			.text('clipboard')
 			.appendTo('#chat-buttons')
 			.click(function () {
-				ChatExtension.execute('clips', null);
+				ChatExtension.execute('clips', []);
+				
+				return false;
 			});
 			
-		$('.message').livequery(function () {
+		$('#chat .message').livequery(function () {
 			var self = this;
 			
 			$('<span class="action_clip" />')
@@ -264,13 +270,20 @@ inject(livequery, bindas, expressions, function ($) {
 	ChatExtension.define('clips', function () {
 		validate(0);
 		
-		var ol = $('<ol class="clips_list" />');
+		var delay = 7.5E3, ol;
+
+		if (Clippings.items.length) {
+			ol = $('<ol class="clips_list" />');
 		
-		for (var i = 0; i < Clippings.items.length; ++i) {
-			ol.append(createClipItem(i, Clippings.items[i].room, Clippings.items[i].display, true));
+			for (var i = 0; i < Clippings.items.length; ++i) {
+				ol.append(createClipItem(i, Clippings.items[i].room, Clippings.items[i].display, true));
+			}
+		} else {
+			ol = $('<span />').text("You do not have any saved clips");
+			delay = 3E3;
 		}
 		
-		ChatExtension.notify(ol, 7.5E3);
+		ChatExtension.notify(ol, delay);
 		
 		return CommandState.SucceededDoClear;
 	});
@@ -524,7 +537,7 @@ inject(livequery, bindas, expressions, function ($) {
 	// Define the /me command
 	ChatExtension.define('me', function () {
 		// Don't validate anything, just send the formatted output
-		$('#input').val('*' + $.trim($.makeArray(arguments.join(' ')) + '*'));
+		$('#input').val('*' + $.trim($.makeArray(arguments).join(' ') + '*'));
 		$('#sayit-button').click();
 		
 		return CommandState.SucceededDoClear;
@@ -1476,14 +1489,6 @@ function expressions($) {
 function bindas($) {
 	$.fn.extend({
 		bindAs: function (nth, type, data, fn) {
-			if (typeof type == 'object') {
-				for (var key in type) {
-					this.bindAs(nth, key, data, type[key], fn);
-				}
-				
-				return this;
-			}
-
 			if (type.indexOf(' ') > -1) {
 				var s = type.split(' ');
 
