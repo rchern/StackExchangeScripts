@@ -288,7 +288,7 @@ with_jquery(function ($) {
 			function add() {
 				var self = $(this);
 				
-				if (this.href != My.profile) {
+				if (self.attr('href') !== My.profile) {
 					users.add(self);
 				}
 			}
