@@ -1,29 +1,29 @@
 // ==UserScript==
-// @name           SE Modifications
-// @description    A collection of modifications for the Stack Exchange network of sites
-// @include       http://stackoverflow.com/*
-// @include       http://meta.stackoverflow.com/*
-// @include       http://superuser.com/*
-// @include       http://meta.superuser.com/*
-// @include       http://serverfault.com/*
-// @include       http://meta.serverfault.com/*
-// @include       http://askubuntu.com/*
-// @include       http://meta.askubuntu.com/*
-// @include       http://answers.onstartups.com/*
-// @include       http://meta.answers.onstartups.com/*
-// @include       http://nothingtoinstall.com/*
-// @include       http://meta.nothingtoinstall.com/*
-// @include       http://seasonedadvice.com/*
-// @include       http://meta.seasonedadvice.com/*
-// @include       http://stackapps.com/*
-// @include       http://*.stackexchange.com/*
-// @exclude       http://chat.stackexchange.com/*
-// @exclude       http://chat.*.stackexchange.com/*
-// @exclude       http://api.*.stackexchange.com/*
-// @exclude       http://odata.stackexchange.com/*
-// @exclude       http://area51.stackexchange.com/*
-// @exclude       http://*/reputation
-// @author         @rchern
+// @name         SE Modifications
+// @description  A collection of modifications for the Stack Exchange network of sites
+// @include      http://stackoverflow.com/*
+// @include      http://meta.stackoverflow.com/*
+// @include      http://superuser.com/*
+// @include      http://meta.superuser.com/*
+// @include      http://serverfault.com/*
+// @include      http://meta.serverfault.com/*
+// @include      http://askubuntu.com/*
+// @include      http://meta.askubuntu.com/*
+// @include      http://answers.onstartups.com/*
+// @include      http://meta.answers.onstartups.com/*
+// @include      http://nothingtoinstall.com/*
+// @include      http://meta.nothingtoinstall.com/*
+// @include      http://seasonedadvice.com/*
+// @include      http://meta.seasonedadvice.com/*
+// @include      http://stackapps.com/*
+// @include      http://*.stackexchange.com/*
+// @exclude      http://chat.stackexchange.com/*
+// @exclude      http://chat.*.stackexchange.com/*
+// @exclude      http://api.*.stackexchange.com/*
+// @exclude      http://data.stackexchange.com/*
+// @exclude      http://area51.stackexchange.com/*
+// @exclude      http://*/reputation
+// @author       @rchern
 // ==/UserScript==
 
 function with_jquery(f) {
@@ -34,6 +34,265 @@ function with_jquery(f) {
 };
 
 with_jquery(function ($) {
+	var profile = $('#hlinks-user a').filter(function () {
+			return this.href && this.href.match(/\/users\/\d+\/[^\/]+$/);
+		});
+		My = {
+			'name': profile.text(),
+			'profile': profile.attr('href')
+		},
+		NameRegistry = (function ($) {
+			var translationTable = {
+				'Þ': 'th',
+				'ß': 'ss',
+				'àåáâäãåą': 'a',
+				'çćč': 'c',
+				'èéêëę': 'e',
+				'ìíîïı': 'i',
+				'ñń': 'n',
+				'òóôõöøő': 'o',
+				'ùúûü': 'u',
+				'ýŸ': 'y',
+				'đ': 'd',
+				'ğ': 'g',
+				'ł': 'l',
+				'śşš': 's',
+				'żźž': 'z'
+			}, tmp = {};
+			
+			for (var translation in translationTable) {
+				for (var i = 0; i < translation.length; ++i) {
+					tmp[translation.charAt(i)] = translationTable[translation];
+				}
+			}
+			
+			translationTable = tmp;
+			
+			delete(tmp);
+
+			return function () {
+				var availableNames = {},
+					searched = null;
+			
+				this.add = function (name) {
+					seek(name, true);
+				};
+				
+				this.getMatches = getMatches;
+				
+				function getMatches(name) {
+					return seek(name, false);
+				};
+				
+				this.lastSearch = lastSearch;
+				
+				function lastSearch() {
+					return searched;
+				}
+				
+				function seek(name, add) {
+					searched = name = translate(name);
+					
+					var first = name.lookup ? name.lookup.charAt(0) : null,
+						list, i, j, current, matches = [];
+					
+					if (first) {
+						if (list = availableNames[first]) {
+							for (i = 0; i < list.length; ++i) {
+								current = list[i].lookup;
+								
+								if (name.lookup.length === 1) {
+									matches.push(list[i]);
+								} else if (current.length >= name.lookup.length) {
+									for (j = 1; j < name.lookup.length && current; ++j) {
+										if (current.charAt(j) != name.lookup.charAt(j)) {
+											current = null;
+										}
+									}
+									
+									if (current) {
+										matches.push(list[i]);
+									}
+								}
+							}
+						}
+						
+						if (add && !matches.length) {
+							if (!availableNames[first]) {
+								availableNames[first] = [];
+							}
+							
+							availableNames[first].push(name);
+						}
+					}
+					
+					return matches;
+				}
+				
+				function translate(name) {
+					if (!name)
+						return '';
+
+					// Check if the passed argument is jQuery (if so, we're extracting names from the usual places)
+					if (name instanceof $)
+						name = name.clone().find('span').remove().end().text();
+						
+					// The passed argument was already translated
+					if (typeof name === 'object' && name.lookup)
+						return name;
+						
+					// This should never happen
+					if (typeof name !== 'string')
+						return '';
+					
+					// Replace the spaces in the name and lookup
+					name = {
+						'original': name.replace(/\s+/g, ''),
+						'lookup': ''
+					};
+					
+					var lookup = name.original.toLowerCase();
+					
+					for (var i = 0; i < lookup.length; ++i) {			
+						name.lookup += translationTable[lookup.charAt(i)] || lookup.charAt(i);
+					}
+
+					return name;
+				}
+			};
+		})($);
+
+	function AutoComplete(target) {
+		var target = target.addClass('auto-complete'),
+			active = false,
+			users = new NameRegistry(),
+			autocomplete = $('<ul class="auto-complete-matches">').css({
+					'position': 'absolute',
+					'width': target.width() + 'px',
+					'margin-left': '0px',
+					'margin-bottom': '5px'
+				})
+				.hide()
+				.insertBefore(target),
+			postSignatures = target.closest('#question, .answer').find('.post-signature');
+				
+			// Get the list of available user names and add them to the autocomplete list
+			// First from the comments
+			target.closest('.comments').find('.comment-user').each(add);
+			// Then from the post signature of the last editor (if present)
+			if (postSignatures.length > 1) {
+				postSignatures.eq(0).find('.user-details a:first').each(add);
+			}
+			
+			// Add the auto-complete options tabber
+			target.bind('keydown', tabselect);
+			// TS: If we bind to keypress, the state of the input won't be what we expect it to be
+			//     We could probably work around that though, since keyup is kind of bad
+			target.bind('keyup click', update);
+			
+			function update(event) {
+				var self = $(this),
+					text = self.val(),
+					selectionIndex, match, matches;
+					
+				if (this.selectionStart !== this.selectionEnd || event.which === 9) {
+					return;
+				}
+				
+				selectionIndex = text.indexOf(' ', this.selectionEnd);
+				selectionIndex = selectionIndex == -1 ? text.length : selectionIndex;
+				
+				// Check for an auto-completable name; note that it has to be the first instance of @ to work
+				if (active = ((match = text.substring(0, selectionIndex).match(/@([^\s]+)$/)) && selectionIndex - match[0].length === text.indexOf('@'))) {
+					// Remove the existing potential matches
+					autocomplete.empty();
+					
+					// Get the list of potential matches
+					matches = users.getMatches(match[1]);
+					
+					// TS: We could do some sorting here, I suppose
+					for (var i = 0; i < matches.length; ++i) {
+						var selected = users.lastSearch().lookup === matches[i].lookup;
+					
+						$('<li />').css({
+								'color': '#000000',
+								'display': 'inline-block',
+								'background-color': '#FFFFFF',
+								'padding': '2px 4px 2px 4px',
+								'margin-right': '5px',
+								'cursor': 'pointer',
+								'border': '1px solid #888888',
+								'font-weight': selected ? 'bold' : 'normal'
+							})
+							.addClass(selected ? 'selected' : '')
+							.text(matches[i].original)
+							.click(function () {
+								var self = $(this);
+								
+								complete(self, self.text());
+								
+								// Trigger a keyup event on the input box
+								target.keyup();
+								
+								return false;
+							})
+							.appendTo(autocomplete);
+					}
+					
+					autocomplete.css({
+							'top': (target.offset().top - autocomplete.outerHeight(true)) + 'px',
+							'left': target.offset().left + 'px'
+						})
+						.show();
+				} else {
+					autocomplete.hide().empty();
+				}
+			}
+			
+			function tabselect(event) {
+				var self = $(this);
+				
+				if (active && event.which == 9) {
+					var selected = autocomplete.find('.selected'),
+						next = selected.next(),
+						current;
+						
+					if (selected.length) {	
+						selected.removeClass('selected').css('font-weight', 'normal');
+						
+						if (next.length) {
+							current = next.addClass('selected').css('font-weight', 'bold');
+						}
+					}
+					
+					if (!next.length) {
+						current = autocomplete.children(':eq(0)').addClass('selected').css('font-weight', 'bold');
+					}
+					
+					if (current && current.length) {
+						complete(self, current.text());
+					}
+					
+					return false;
+				}
+			}
+			
+			function complete(self, text) {
+				var value = self.val(),
+					input = self.focus().val(value.replace(/@[^\s]+/, '@' + text))[0];
+							
+				input.selectionStart = input.selectionEnd = value.indexOf('@') + text.length + 1;
+			}
+				
+			function add() {
+				var self = $(this);
+				
+				if (this.href != My.profile) {
+					users.add(self);
+				}
+			}
+	}
+	
 	$(function () {
 		// add timeline and history links to post menu
 		var questionURL = $("#question-header a").attr("href");
@@ -118,160 +377,15 @@ with_jquery(function ($) {
 
 				$((post.match(/^[0-9]+$/) ? '#answer-' + post : '#question') + ' .comments-link').click();
 			}
-
-			// add autocomplete to comments
-			$(document).bind('keydown', function(event) {
+			
+			$(document).bind('keydown', function (event) {
 				if (!event.shiftKey || event.which != 50)
 					return;
-
+				
 				var target = $(event.target);
-
-				if (target.attr('name') == 'comment' && !target.hasClass('easy-auto-complete')) {
-					var isActive = false,
-						users = [];
-
-					function simplify(name) {
-						return name.clone().find('span').remove().end().text().replace(/\s+/g, '');
-					}
-
-					function autocomplete(event) {
-						var self = $(this),
-							text = self.val(),
-							matches,
-							list,
-							selectionIndex;
-
-						if (this.selectionStart != this.selectionEnd || event.which == 9) {
-							return;
-						}
-
-						selectionIndex = text.indexOf(' ', this.selectionEnd);
-						selectionIndex = selectionIndex == -1 ? text.length : selectionIndex;
-
-						if (isActive = ((matches = text.substring(0, selectionIndex).match(/@([^\s]+)$/))
-							&& (selectionIndex - matches[0].length == text.indexOf('@')))) {
-							(list = self.prev('.easy-auto-complete-matches'))
-								.children()
-								.remove();
-
-							$.each(users, function(index, value) {
-								if (value.toLowerCase().indexOf(matches[1].toLowerCase()) == 0) {
-									$('<li />').css({
-											'display': 'inline-block',
-											'background-color': '#FFFFFF',
-											'padding': '2px 4px 2px 4px',
-											'margin-right': '5px',
-											'cursor': 'pointer',
-											'border': '1px solid #888888',
-											'font-weight': value.toLowerCase() == matches[1].toLowerCase() ? 'bold' : 'normal'
-										})
-										.addClass(value.toLowerCase() == matches[1].toLowerCase() ? 'selected' : '')
-										.text(value)
-										.click(function() {
-											var text = $(this).text(),
-												value = self.val(),
-												box = self.focus()
-													.val(value.replace(/@[^\s]+/, '@' + text))[0];
-
-											box.selectionStart = box.selectionEnd = value.indexOf('@') + text.length + 1;
-
-											self.keyup();
-
-											return false;
-										})
-										.appendTo(list);
-								} else if (matches[1] < value) {
-									return false;
-								}
-							});
-
-							list.css({
-									'display': 'block',
-									'top': (self.offset().top - list.outerHeight(true)) + 'px',
-									'left': self.offset().left + 'px'
-								});
-						} else {
-							self.prev('.easy-auto-complete-matches')
-								.css({ 'display': 'none' })
-								.children()
-								.remove();
-						}
-					}
-
-					target.addClass('easy-auto-complete')
-						.before('<ul class="easy-auto-complete-matches" />')
-						.prev()
-						.css({
-							'display': 'none',
-							'position': 'absolute',
-							'width': target.width() + 'px',
-							'margin-left': '0px',
-							'margin-bottom': '5px',
-						})
-						.end()
-						.bind('keydown', function(event) {
-							var self = $(this);
-
-							if (isActive && event.which == 9) {
-								var matches = self.prev(),
-									selected = matches.find('.selected'),
-									next = selected.next(),
-									current;
-
-								if (selected.length) {
-									selected.removeClass('selected')
-										.css({ 'font-weight': 'normal' });
-
-									if (next.length) {
-										current = next.addClass('selected')
-											.css({ 'font-weight': 'bold' });
-									}
-								}
-
-								if (!next.length) {
-									current = matches.children()
-										.first()
-										.addClass('selected')
-										.css({ 'font-weight': 'bold' });
-								}
-
-								if (current && current.length) {
-									var text = current.text(),
-										value = self.val(),
-										box = self.focus()
-											.val(value.replace(/@[^\s]+/, '@' + text))[0];
-
-									box.selectionStart = box.selectionEnd = value.indexOf('@') + text.length + 1;
-								}
-
-								return false;
-							}
-						})
-						.bind('keyup click', autocomplete)
-						.data('_easy-auto-complete-users', users)
-						.closest('.comments')
-						.find('.comment-user')
-						.each(function() {
-							var username = simplify($(this));
-
-							if ($.inArray(username, users) == -1) {
-								users.push(username);
-							}
-						})
-						.closest('#question')
-						.find('.post-signature .user-details')
-						.each(function() {
-							var username = simplify($(this).find('a:first'));
-
-							if ($.inArray(username, users) == -1) {
-								users.push(username);
-							}
-						})
-						.trigger('keypress', function(event) {
-							users.sort();
-
-							return event;
-						}(event));
+				
+				if (target.attr('name') === 'comment' && !target.hasClass('auto-complete')) {
+					new AutoComplete(target);
 				}
 			});
 		}
