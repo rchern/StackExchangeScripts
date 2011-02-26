@@ -21,7 +21,6 @@
 // @exclude      http://chat.*.stackexchange.com/*
 // @exclude      http://api.*.stackexchange.com/*
 // @exclude      http://data.stackexchange.com/*
-// @exclude      http://area51.stackexchange.com/*
 // @exclude      http://*/reputation
 // @author       @rchern
 // ==/UserScript==
@@ -229,7 +228,7 @@ with_jquery(function ($) {
 							.click(function () {
 								var self = $(this);
 								
-								complete(self, self.text());
+								complete(target, self.text());
 								
 								// Trigger a keyup event on the input box
 								target.keyup();
@@ -244,6 +243,8 @@ with_jquery(function ($) {
 							'left': target.offset().left + 'px'
 						})
 						.show();
+						
+					return false;
 				} else {
 					autocomplete.hide().empty();
 				}
@@ -386,14 +387,19 @@ with_jquery(function ($) {
 				
 				if (target.attr('name') === 'comment' && !target.hasClass('auto-complete')) {
 					new AutoComplete(target);
+				} else if (target.attr('name') !== 'comment') {
+					$('.auto-complete-matches').hide();
 				}
+			});
+			$(document).bind('click', function (event) {
+				$('.auto-complete-matches').hide();
 			});
 		}
 
 		// adds an audit link next to your rep in the header that leads to /reputation
 		var locationBits = location.hostname.split('.');
 		
-		if(locationBits[0] !== 'meta' || locationBits[1] === 'stackoverflow')
+		if(locationBits[0] !== 'discuss' && (locationBits[0] !== 'meta' || locationBits[1] === 'stackoverflow'))
 			$("#hlinks-user .reputation-score").parent().after("<a href='/reputation'>(audit)</a>");
 		
 		// Uses ajax to load revision source inline
