@@ -179,7 +179,7 @@ inject(livequery, bindas, expressions, function ($) {
 			var error = $('#inputerror');
 
 			if (event.target != error[0]) {
-				error.clearQueue().fadeOut('slow');
+				error.stop(true, true).fadeOut('slow');
 			}
 		});
 		
