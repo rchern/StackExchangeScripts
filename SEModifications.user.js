@@ -42,26 +42,28 @@ with_jquery(function ($) {
 		},
 		NameRegistry = (function ($) {
 			var translationTable = {
-				'Þ': 'th',
-				'ß': 'ss',
-				'àåáâäãåą': 'a',
-				'çćč': 'c',
-				'èéêëę': 'e',
-				'ìíîïı': 'i',
-				'ñń': 'n',
-				'òóôõöøő': 'o',
-				'ùúûü': 'u',
-				'ýŸ': 'y',
-				'đ': 'd',
-				'ğ': 'g',
-				'ł': 'l',
-				'śşš': 's',
-				'żźž': 'z'
+				'th': 'Þ',
+				'ss': 'ß',
+				'a': 'àåáâäãåą',
+				'c': 'çćč',
+				'e': 'èéêëę',
+				'i': 'ìíîïı',
+				'n': 'ñń',
+				'o': 'òóôõöøő',
+				'u': 'ùúûü',
+				'y': 'ýŸ',
+				'd': 'đ',
+				'g': 'ğ',
+				'l': 'ł',
+				's': 'śşš',
+				'z': 'żźž'
 			}, tmp = {};
 			
 			for (var translation in translationTable) {
-				for (var i = 0; i < translation.length; ++i) {
-					tmp[translation.charAt(i)] = translationTable[translation];
+				var original = translationTable[translation];
+				
+				for (var i = 0; i < original.length; ++i) {
+					tmp[original.charAt(i)] = translation;
 				}
 			}
 			
