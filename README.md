@@ -133,8 +133,7 @@ Provides minor tweaks to StackExchange sites.
 
 This script also adds chat-like autocomplete for comments replies, in a way (relatively) 
 consistent with [these criteria](http://meta.stackoverflow.com/questions/43019/how-do-comment-replies-work/43020#43020). 
-Note that while editors can be notified, their usernames will not show up 
-on the list of names. 
+Note that while editors can be notified, only the **last** editor's name will show up in the list. 
 
 ##SEReputationAuditHelper
 
