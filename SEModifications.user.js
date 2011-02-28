@@ -220,7 +220,7 @@ with_jquery(function ($) {
 								'display': 'inline-block',
 								'background-color': '#FFFFFF',
 								'padding': '2px 4px 2px 4px',
-								'margin-right': '5px',
+								'margin': '0px 5px 0px 0px',
 								'cursor': 'pointer',
 								'border': '1px solid #888888',
 								'font-weight': selected ? 'bold' : 'normal'
@@ -241,8 +241,8 @@ with_jquery(function ($) {
 					}
 					
 					autocomplete.css({
-							'top': (target.offset().top - autocomplete.outerHeight(true)) + 'px',
-							'left': target.offset().left + 'px'
+							'top': (target.position().top - autocomplete.outerHeight(true)) + 'px',
+							'left': target.position().left + 'px'
 						})
 						.show();
 						
