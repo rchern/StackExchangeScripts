@@ -427,5 +427,10 @@ with_jquery(function ($) {
 				return false;
 			});
 		}
+
+                // Changes the page title to be the question and the Stack Exchange site
+		$("#question-header a").text( function (i,str) {
+			document.title = str + ' - ' + $("#hlogo a").text();
+		});
 	});
 });
