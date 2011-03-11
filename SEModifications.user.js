@@ -402,7 +402,7 @@ with_jquery(function ($) {
 		var locationBits = location.hostname.split('.');
 		
 		if(locationBits[0] !== 'discuss' && (locationBits[0] !== 'meta' || locationBits[1] === 'stackoverflow'))
-			$("#hlinks-user .reputation-score").parent().after("<a href='/reputation'>(audit)</a>");
+			$("#hlinks-user .reputation-score").attr('title', 'your reputation; view reputation audit').parent().attr('href', '/reputation');
 		
 		// Uses ajax to load revision source inline
 		if(location.pathname.match(/^\/posts\/\d+\/revisions/)){
