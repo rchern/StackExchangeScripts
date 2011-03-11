@@ -191,7 +191,7 @@ inject(livequery, bindas, expressions, function ($) {
 				if (value.substring(1, 2) == '/') {
 					input.val(value.substring(1));
 				} else {
-					var args = value.split(' '),
+					var args = value.replace(/\s+$/, '').split(' '),
 						command = args[0].substring(1),
 						result;
 						
@@ -737,7 +737,7 @@ inject(livequery, bindas, expressions, function ($) {
 
 		$(Selectors.getMessage(id) + ' .stars .img').eq(0).click();
 		
-		return CommandState.SucceedDoClear;
+		return CommandState.SucceededDoClear;
 	});
 	
 	// Define the room switch command
