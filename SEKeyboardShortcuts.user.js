@@ -148,7 +148,7 @@ with_jquery(function ($) {
 			"recent": { code: "G,E", url: "/users/recent" },
 			"rep audit": { code: "G,R", url: "/reputation" },
 			"chat": { code: "G,C", url: "http://chat." + location.hostname },
-			"profile": { code: "G,P", url: $("#hlinks-user a").eq(1).href },
+			"profile": { code: "G,P", url: $("#hlinks-user a").attr("href") },
 			"profile summary": { code: "G,S", fn: function () { $(".profile-triangle").mouseover(); } },
 			"main vs meta": { code: "G,M", url: "http://" + (location.hostname.indexOf("meta") === 0 ? location.hostname.substring(5) : "meta." + location.hostname) },
 			"inbox": { code: "G,I", fn: function () { $("#portalLink .genu").click(); $("#portalLink #seTabInbox").click(); } },
