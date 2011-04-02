@@ -30,25 +30,25 @@ inject(livequery, bindas, expressions, function ($) {
 	var Selectors = {
 		'getMessage': function getMessage(id) {
 			validate('number');
-			
+
 			return id ? '#message-' + id : '.user-container.mine:last .message:last';
 		},
 		'getSignature': function getSignature(match) {
 			validate('string');
-			
+
 			return ".signature:contains('" + match + "') ~ .messages";
 		},
 		'getRoom': function getRoom(match) {
 			validate('string');
-		
+
 			return "#my-rooms > li > a[href^='/rooms']:contains('" + match + "')";
 		}
 	};
-	
+
 	// Setup the highlight and clipping objects
 	var Highlights = new Storage(),
 		Clippings = new Storage('chatClips');
-	
+
 	// The list of command states that can be returned from a command function, or one of the command utility functions
 	var CommandState = {
 		// The command wasn't found
@@ -60,10 +60,10 @@ inject(livequery, bindas, expressions, function ($) {
 		// The command succeeded, and the input should not be cleared (where applicable)
 		'SucceedNoClear': 2
 	};
-	
-	// Setup the command mapping
-	var Commands = {};
-	
+
+	// Setup the command and onebox mappings
+	var Commands = {}, Oneboxes = {};
+
 	// Create the navigation
 	var Navigation = new Navigation();
 
@@ -82,6 +82,23 @@ inject(livequery, bindas, expressions, function ($) {
 		};
 
 		/*
+		 * Associates domains with functions that produce pseudo-oneboxes
+		 */
+		this.associate = function (domain, fn) {
+			domain = domain.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+).*/i);
+
+			if (!domain)
+				throw new Error("The domain " + domain + " does not look valid");
+
+			domain = domain[1].toLowerCase();
+
+			if (Oneboxes[domain])
+				throw new Error("The domain " + domain + " is already onebox-associated");
+
+			Oneboxes[domain] = fn;
+		}
+
+		/*
 		 * Executes commands and automatically displays errors in the case of failed function validation
 		 */
 		this.execute = function (name, args) {
@@ -93,6 +110,9 @@ inject(livequery, bindas, expressions, function ($) {
 					// Attempt to run the command and get the result
 					result = Commands[name].apply(this, args);
 				} catch (ex) {
+					if (ex.message)
+						ChatExtension.notify(ex.message);
+				
 					result = CommandState.Failed;
 				}
 			}
@@ -125,27 +145,27 @@ inject(livequery, bindas, expressions, function ($) {
 					'max-width': '60%'
 				});
 		};
-		
+
 		/*
 		 * Adds styles to the userscript's <style> element, to simplify writing CSS styles for script-injected content
 		 */
 		this.style = function (styleObject) {
 			var userStyle = $('style#user-style'),
 				styleText = userStyle.length ? userStyle.text() : '';
-			
+
 			for (var selector in styleObject) {
 				styleText = styleText + selector + '{';
-				
+
 				for (var style in styleObject[selector]) {
 					styleText = styleText + style + ':' + styleObject[selector][style] + ';';
 				}
-				
+
 				styleText = styleText + '}';
 			}
-			
+
 			if (!userStyle.length)
 				userStyle = $('<style id="user-style" />').appendTo('head');
-				
+
 			userStyle.text(styleText);
 		};
 
@@ -154,26 +174,26 @@ inject(livequery, bindas, expressions, function ($) {
 		this.Selectors = Selectors;
 		this.CommandState = CommandState;
 	};
-	
+
 	// Define the on ready activities
 	$(function () {
 		var input = $('#input'),
 			page = $(document);
-			
+
 		// Add a handler for Ctrl + Space message resubmission
 		page.bindAs(0, 'keydown', function (event) {
 			if (event.which == 32 && isCtrl(event)) {
 				// Store the value, since the next step removes it
 				var value = input.val();
-				
+
 				$('.message.pending:first a:contains(retry)').click();
-				
+
 				input.val(value);
-				
+
 				return false;
 			}
 		});
-	
+
 		// Add a handler to remove the overlay
 		page.bindAs(0, 'click keydown', function (event) {
 			var error = $('#inputerror');
@@ -182,11 +202,11 @@ inject(livequery, bindas, expressions, function ($) {
 				error.stop(true, true).fadeOut('slow');
 			}
 		});
-		
+
 		// Add a handler for /commands
 		input.bindAs(0, 'keydown', function (event) {
 			var value = input.val();
-			
+
 			if (event.which == 13 && value.substring(0, 1) == '/') {
 				if (value.substring(1, 2) == '/') {
 					input.val(value.substring(1));
@@ -194,23 +214,23 @@ inject(livequery, bindas, expressions, function ($) {
 					var args = value.replace(/\s+$/, '').split(' '),
 						command = args[0].substring(1),
 						result;
-						
+
 					args = Array.prototype.slice.call(args, 1);
 					result = ChatExtension.execute(command, args);
-					
+
 					if (result == CommandState.SucceededDoClear)
 						input.val('');
 					else if (result == CommandState.NotFound)
 						ChatExtension.notify($(getCommands()).before($('<span />').text("Unknown command, try again, or use // to escape commands")));
-						
+
 					event.preventDefault();
 					event.stopImmediatePropagation();
-					
+
 					return false;
 				}
 			}
 		});
-		
+
 		// Add keyboard navigation handlers
 		input.bindAs(0, 'keydown', Navigation.launch);
 		input.bindAs(0, 'focus', Navigation.deselect);
@@ -218,17 +238,45 @@ inject(livequery, bindas, expressions, function ($) {
 		page.bindAs(0, 'keydown', Navigation.navigate);
 		page.bindAs(0, 'keypress', Navigation.suppress);
 		$('#chat .message').livequery(Navigation.update);
-		
+
 		// Add a handler to update clips across tabs
 		$(window).bindAs(0, 'focus', function (event) {
 			Clippings.update();
 		});
-		
+
 		// Highlight persisted highlight items
 		for (var i = 0; i < Highlights.items.length; ++i) {
 			addHighlight(Highlights.items[i]);
 		}
 		
+		// Add default Vimeo onebox support
+		ChatExtension.associate('vimeo.com', function (domain, path) {
+			var id = path.match(/^\/([0-9]+)/) || path.match(/\/channels\/[\d\w]+#([0-9]+)/) || path.match(/\/groups\/[\d\w]+\/videos\/([0-9]+)/);
+			
+			if (!id || !id[1])
+				throw new Error("The Vimeo URL " + path + " is unsupported");
+			
+			id = id[1];
+			
+			$.ajax({
+				url: 'http://vimeo.com/api/v2/video/' + id + '.json',
+				dataType: 'jsonp',
+				success: function (data) {
+					// Drop in small preview frame
+					$('#input').val(data[0].thumbnail_large);
+					$('#sayit-button').click();
+
+					// Wait a bit before dropping in the video title
+					(function (title, url, name) {
+						setTimeout(function () {
+							$('#input').val('[▶ Watch **' + title + '** by ' + name + ' on Vimeo](' + url + ')');
+							$('#sayit-button').click();
+						}, 1100);
+					})(data[0].title, data[0].url, data[0].user_name);
+				}
+			});
+		});
+
 		// Show the message ID and timestamp on each message
 		$("#chat .message:not(.pending):not(.posted)").livequery(function () {
 			var id = this.id.replace("message-", "");
@@ -243,20 +291,20 @@ inject(livequery, bindas, expressions, function ($) {
 					.attr('id', 'id-' + id);
 			}
 		});
-		
+
 		// Inject clipboard button and clipboard message link
 		$('<button class="button" />')
 			.text('clipboard')
 			.appendTo('#chat-buttons')
 			.click(function () {
 				ChatExtension.execute('clips', []);
-				
+
 				return false;
 			});
-			
+
 		$('#chat .message').livequery(function () {
 			var self = this;
-			
+
 			$('<span class="action_clip" />')
 				.prependTo($(this).find('.meta'))
 				.attr('title', "Add this message to my clipboard")
@@ -265,16 +313,16 @@ inject(livequery, bindas, expressions, function ($) {
 				});
 		});
 	});
-	
+
 	// Define the snippet list command
 	ChatExtension.define('clips', function () {
 		validate(0);
-		
+
 		var delay = 7.5E3, ol;
 
 		if (Clippings.items.length) {
 			ol = $('<ol class="clips_list" />');
-		
+
 			for (var i = 0; i < Clippings.items.length; ++i) {
 				ol.append(createClipItem(i, Clippings.items[i].room, Clippings.items[i].display, true));
 			}
@@ -282,63 +330,63 @@ inject(livequery, bindas, expressions, function ($) {
 			ol = $('<span />').text("You do not have any saved clips");
 			delay = 3E3;
 		}
-		
+
 		ChatExtension.notify(ol, delay);
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the delete command
 	ChatExtension.define('del', function (id) {
 		if (id)
 			validate('number');
 
 		id = Selectors.getMessage(id) + ' .action-link';
-		
+
 		if (!$(id).click().closest('.message').find('.delete').eq(0).click().length)
 			throw new Error("Unable to delete message");
-			
-		return CommandState.SucceededNoClear;		
+
+		return CommandState.SucceededNoClear;
 	});
-	
+
 	// Define the edit command
 	ChatExtension.define('edit', function (id) {
 		if (id)
 			validate('number');
 
 		id = Selectors.getMessage(id) + ' .action-link';
-		
+
 		if (!$(id).click().closest('.message').find('.edit').eq(0).click().length)
 			throw new Error("Unable to edit message");
-			
+
 		return CommandState.SucceededNoClear;
 	});
-	
+
 	// Define the message flag command
 	ChatExtension.define('flag', function (id) {
 		validate('number');
-		
+
 		$(Selectors.getMessage(id) + ' .flags .img').eq(0).click();
-		
+
 		return CommandState.SucceedDoClear;
 	});
-	
+
 	// Define the help command
 	ChatExtension.define('help', function () {
 		ChatExtension.notify($('<span />').text('List of recognized commands:').add(getCommands()), 7.5E3);
 	});
-	
+
 	// Define the message history command
 	ChatExtension.define('history', function (id) {
 		validate('number');
-		
+
 		$('<div class="gm_room_list" />').load('/messages/' + id + '/history #content', function () {
 			ChatExtension.notify(this, 7.5E3);
 		});
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the highlight display command
 	ChatExtension.define('hl', function (match) {
 		if (typeof match == 'undefined') {  //no parameters = show list
@@ -365,7 +413,7 @@ inject(livequery, bindas, expressions, function ($) {
 			ChatExtension.notify(ul, 7.5E3);
 		} else { //if already in list, remove - else add
 			match = $.makeArray(arguments).join(' ');
-			
+
 			if ($.inArray(match, Highlights.items) >= 0) {
 				Highlights.remove(match);
 				removeHighlight(match);
@@ -377,78 +425,78 @@ inject(livequery, bindas, expressions, function ($) {
 
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the jump command
 	ChatExtension.define('jump', function (id) {
 		validate('number');
-		
+
 		var message = $(Selectors.getMessage(id));
-		
+
 		if (message.length) {
 			Navigation.deselect();
 			Navigation.select(message);
-			
+
 			$(document).scrollTop(message.offset().top - 5);
 		} else {
 			window.open('http://' + window.location.host + '/transcript/message/' + id + '#' + id);
 		}
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the snippet jotting command
 	ChatExtension.define('jot', function () {
 		var first = arguments[0],
 			room = $('#roomname').text(),
 			insert, display;
-			
+
 		if (isNumber(first)) {
 			validate('number');
-			
+
 			insert = 'http://' + window.location.hostnmae + '/transcript/message/' + first;
 			var content = $(Selectors.getMessage(first));
-			
+
 			if (content.length !== 1)
 				throw new Error("The message you're trying to jot down cannot be found");
-			
+
 			display = content.find('.content').html();
 		} else {
 			display = insert = $.makeArray(arguments).join(' ');
-			
+
 			if (insert === '')
 				throw new Error("You have not entered anything to be jotted down");
 		}
-		
+
 		Clippings.add({
 			'display': display,
 			'insert': insert,
 			'room': room
 		});
-		
+
 		ChatExtension.notify($('<ul class="clips_list" />').append(createClipItem(Clippings.items.length - 1, room, display, false)), 7.5E3);
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the show last message command
 	ChatExtension.define('last', function (match) {
 		match = $.makeArray(arguments).join(' ');
 		match = $(Selectors.getSignature(match)).last();
-		
+
 		if (!match.length)
 			throw new Error("Last message cannot be found. Try /load more messages.", 2000);
-		
+
 		match.addClass('highlight');
-		
+
 		window.setTimeout(function () {
 			match.removeClass('highlight');
 		}, 2000);
-		
+
 		$.scrollTo(match, 200);
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the leave room command
 	ChatExtension.define('leave', function (match) {
 		$('#input').val('');
@@ -467,10 +515,10 @@ inject(livequery, bindas, expressions, function ($) {
 			// String - leave room containing string
 			$(Selectors.getRoom(match) + "~ .quickleave").click();
 		}
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the room list command
 	ChatExtension.define('list', function (match) {
 		$.get('/', {
@@ -508,7 +556,7 @@ inject(livequery, bindas, expressions, function ($) {
 						'filter': match
 					}, function (data) {
 						$(data).filter(".roomcard").each(processPage);
-						
+
 						if (i >= pageCount)
 							ChatExtension.notify(ul, 7.5E3);
 					});
@@ -520,78 +568,56 @@ inject(livequery, bindas, expressions, function ($) {
 
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the load older messages command
 	ChatExtension.define('load', function () {
 		validate(0);
-		
+
 		var message = $('.message')[0];
-		
+
 		$('#getmore').data('events').click[0].handler(function() {
 			$(document).scrollTo(message, 400);
 		});
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the /me command
 	ChatExtension.define('me', function () {
 		// Don't validate anything, just send the formatted output
 		$('#input').val('*' + $.trim($.makeArray(arguments).join(' ') + '*'));
 		$('#sayit-button').click();
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the pseudo-onebox command
 	ChatExtension.define('ob', function (url) {
 		validate('string');
-		
-		url = url.replace(/https?:\/\/(www\.)?/, '');
 
-		if (url.indexOf('vimeo.com') > -1) {
-			var id;
+		url = url.match(/^(?:https?:\/\/)?((?:www\.)?([^\/]+))(.*)/i);
 
-			if (url.match(/^vimeo\.com\/[0-9]+/)) {
-				id = url.split('/')[1];
-			} else if (url.match(/^vimeo\.com\/channels\/[\d\w]+#[0-9]+/)) {
-				id = url.split('#')[1];
-			} else if (url.match(/vimeo\.com\/groups\/[\d\w]+\/videos\/[0-9]+/)) {
-				id = url.split('/')[4];
-			} else {
-				throw new Error('Unsupported Vimeo URL');
-			}
+		if (!url)
+			throw new Error("Invalid URL " + url);
 
-			$.ajax({
-				url: 'http://vimeo.com/api/v2/video/' + id + '.json',
-				dataType: 'jsonp',
-				success: function (data) {
-					// Drop in small preview frame
-					$('#input').val(data[0].thumbnail_large);
-					$('#sayit-button').click();
+		if (!Oneboxes[url[2]])
+			throw new Error("The domain " + url[2] + " does not have associated onebox support");
 
-					// Wait a bit before dropping in the video title
-					(function (title, url, name) {
-						setTimeout(function () {
-							$('#input').val('[â–¶ Watch **' + title + '** by ' + name + ' on Vimeo](' + url + ')');
-							$('#sayit-button').click();
-						}, 400);
-					})(data[0].title, data[0].url, data[0].user_name);
-				}
-			});
-		}
-	});
-	
-	// Define the snippet paste command
-	ChatExtension.define('paste', function (id) {
-		validate('number');
-		
-		$('#input').val(Clippings.items[id].insert);
-		$('#sayit-button').click();
+		Oneboxes[url[2]](url[1], url[3]);
 		
 		return CommandState.SucceededDoClear;
 	});
-	
+
+	// Define the snippet paste command
+	ChatExtension.define('paste', function (id) {
+		validate('number');
+
+		$('#input').val(Clippings.items[id].insert);
+		$('#sayit-button').click();
+
+		return CommandState.SucceededDoClear;
+	});
+
 	// Define the user profile command
 	ChatExtension.define('profile', function () {
 		match = $.makeArray(arguments).slice(1).join(" ");
@@ -713,82 +739,82 @@ inject(livequery, bindas, expressions, function ($) {
 
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the message quote command
 	ChatExtension.define('quote', function (id) {
 		validate('number');
-		
+
 		$('#input').val('http://' + window.location.host + '/transcript/message/' + id + '#' + id);
 		$('#sayit-button').click();
 	});
-	
+
 	// Define the snippet remove command
 	ChatExtension.define('rmclip', function (id) {
 		validate('number');
-		
+
 		Clippings.remove(Clippings.items[id]);
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the message star command
 	ChatExtension.define('star', function (id) {
 		validate('number');
 
 		$(Selectors.getMessage(id) + ' .stars .img').eq(0).click();
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the room switch command
 	ChatExtension.define('switch', function (match) {
 		validate('string');
-		
+
 		var rooms = $(Selectors.getRoom(match));
-		
+
 		if (rooms.length !== 1) {
 			throw new Error("Unable to find a single match");
 		}
-		
+
 		window.location = rooms.attr('href');
 	});
-	
+
 	// Define the transcript view command
 	ChatExtension.define('transcript', function (match) {
 		var href = '';
-	
+
 		if (!match) {
 			href = $("a.button[href^='/transcript']").attr('href');
 		} else {
 			var search = $('#searchbox'),
 				form = search.parent();
-				
+
 			href = form.attr('action') + '?room=' + $("input[name='room']", form).val() + '&' + search.attr('name') + '=' + escape(match);
 		}
-		
+
 		window.open(href);
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	// Define the update command
 	ChatExtension.define('update', function () {
 		validate(0);
-		
+
 		try {
 			window.location = 'http://github.com/rchern/StackExchangeScripts/raw/master/SEChatModifications.user.js';
 		} catch (ex) {}
-		
+
 		return CommandState.SucceededDoClear;
 	});
-	
+
 	/*
 	 * Defines the storage wrapper
 	 */
 	function Storage(name) {
 		this.storageName = name || window.location.pathname + 'chatHighlights';
 		this.items = [];
-			
+
 		/*
 		 * Adds an item to this local storage collection
 		 */
@@ -796,9 +822,9 @@ inject(livequery, bindas, expressions, function ($) {
 			if ($.inArray(match, this.items) == -1) {
 				this.items.push(match);
 				this.store();
-			}	
+			}
 		};
-		
+
 		/*
 		 * Removes an item from this local storage collection
 		 */
@@ -809,7 +835,7 @@ inject(livequery, bindas, expressions, function ($) {
 				this.store();
 			}
 		};
-		
+
 		/*
 		 * Updates the item list of this local storage collection
 		 */
@@ -817,14 +843,14 @@ inject(livequery, bindas, expressions, function ($) {
 			if (localStorage[this.storageName] != null)
 				this.items = JSON.parse(localStorage[this.storageName]);
 		};
-		
+
 		this.update();
-		
+
 		this.store = function () {
 			localStorage[this.storageName] = JSON.stringify(this.items);
 		}
 	}
-	
+
 	/*
 	 * Defines the keyboard navigation functionality
 	 */
@@ -871,94 +897,94 @@ inject(livequery, bindas, expressions, function ($) {
 					'command': 'star',
 				}
 			};
-		
+
 		/*
 		 * Binds new keyboard navigation message commands
 		 */
 		this.bind = function (key, command, jump) {
 			if (actions[key])
 				throw new Error("The key " + key + " is already mapped");
-				
+
 			if (typeof(command) !== 'string' && typeof(command) !== 'function')
 				throw new Error("The command must be a command name (string) or function");
-				
+
 			actions[key] = {
 				'command': command,
 				'jump': !!jump
 			};
 		};
-		
+
 		/*
 		 * Selects the specified message, turning on keyboard navigation in the process
 		 */
 		this.select = selectMessage;
-		
+
 		// TS: We can't call this function "select", because Chrome undefines the reference in navigate() for some reason
 		function selectMessage(message) {
 			message = $(message);
-			
+
 			if (message.length) {
 				active = true;
-				
+
 				return message.eq(0).addClass('easy-navigation-selected');
 			}
-			
+
 			return null;
 		}
-		
+
 		/*
 		 * Deselects any selected messages, hides the current message peek if present, and disables keyboard navigation
 		 */
 		this.deselect = deselect;
-		
+
 		function deselect() {
 			active = false;
-			
+
 			unpeek();
 			$('#chat .easy-navigation-selected').removeClass('easy-navigation-selected');
 		}
-		
+
 		/*
 		 * Launches the keyboard navigation
 		 */
 		this.launch = function (event) {
 			if (isCtrl(event) && event.which == 38) {
 				this.blur();
-				
+
 				active = true;
-				
+
 				$(document).trigger(event);
-				
+
 				event.preventDefault();
 				event.stopImmediatePropagation();
-				
+
 				return false;
 			}
 		};
-		
+
 		/*
 		 * Performs the bulk of the keyboard navigation work
 		 */
 		this.navigate = function (event, n) {
 			unpeek();
-			
+
 			if (isCtrl(event) && event.which == 40) {
 				$(document).scrollTop($(document).height());
 				$('#input').focus();
-				
+
 				return true;
 			}
-			
+
 			if (!active)
 				return true;
-				
+
 			if (n === 0)
 				return false;
-				
+
 			var selected = $('#chat .easy-navigation-selected'),
 				up = event.which == 33 || event.which == 38,
 				down = event.which == 34 || event.which == 40;
-				
+
 			if (up || down) {
 				if (!selected.length) {
 					selected = selectMessage('#chat .message:last');
@@ -975,7 +1001,7 @@ inject(livequery, bindas, expressions, function ($) {
 						selected = selectMessage(sibling);
 					}
 				}
-				
+
 				var monologue = selected.closest('.monologue'),
 					messageTop = selected.offset().top,
 					messageHeight = selected.outerHeight(true),
@@ -1007,7 +1033,7 @@ inject(livequery, bindas, expressions, function ($) {
 
 				if (n)
 					arguments.callee(event, n - 1);
-					
+
 				return false;
 			} else {
 				var action = handles(event),
@@ -1048,12 +1074,12 @@ inject(livequery, bindas, expressions, function ($) {
 				}
 			}
 		};
-		
+
 		/*
 		 * Previews a message above the currently selected message
 		 */
 		this.peek = peek;
-		
+
 		function peek(reply, parent, text) {
 			if ((reply = $('#message-' + reply + '.easy-navigation-selected')).length) {
 				$('<div class="easy-navigation-peekable"></div>')
@@ -1069,16 +1095,16 @@ inject(livequery, bindas, expressions, function ($) {
 				update();
 			}
 		}
-		
+
 		/*
 		 * Hides the message preview, if present
 		 */
 		this.unpeek = unpeek;
-		
+
 		function unpeek() {
 			$('.easy-navigation-peekable').remove();
 		}
-		
+
 		/*
 		 * Suppresses events that the keyboard navigation will handle
 		 */
@@ -1088,12 +1114,12 @@ inject(livequery, bindas, expressions, function ($) {
 				event.preventDefault();
 			}
 		}
-		
+
 		/*
 		 * Updates the position of the preview box, necessary when content is added / removed from the page
 		 */
 		this.update = update;
-		
+
 		function update() {
 			var peekable = $('body > .easy-navigation-peekable'),
 				reply,
@@ -1112,28 +1138,28 @@ inject(livequery, bindas, expressions, function ($) {
 				}
 			}
 		}
-		
+
 		/*
 		 * Returns the action object associated with this event, if any
 		 */
 		function handles(key) {
 			if (key && !isNumber(key))
 				key = key.which;
-		
+
 			return key ? actions[key] : null;
 		}
 	}
-	
+
 	/*
 	 * Validates the arguments passed to the calling method based on the passed parameters
 	 */
 	function validate(length, types) {
 		if (arguments.length == 1 && typeof(length) === 'string')
 			length = (types = [length]).length;
-		
+
 		if (!length)
 			length = 0;
-	
+
 		var args = validate.caller.arguments;
 
 		// Verify that there are the expected number of arguments
@@ -1168,7 +1194,7 @@ inject(livequery, bindas, expressions, function ($) {
 	function isCtrl(event) {
 		return event && (event.ctrlKey || (!event.altKey && event.metaKey));
 	}
-	
+
 	/*
 	 * Returns an unordered HTML list with the currently available commands
 	 */
@@ -1195,7 +1221,7 @@ inject(livequery, bindas, expressions, function ($) {
 					.appendTo(ul);
 			})(commands[i]);
 		}
-		
+
 		return ul;
 	}
 
@@ -1204,24 +1230,24 @@ inject(livequery, bindas, expressions, function ($) {
 	 */
 	function matchSite(site, prefix) {
 		site = site.toLowerCase();
-		
+
 		var result = '', first, rest;
-		
+
 		if (!prefix)
 			prefix = '';
-			
+
 		if (site.indexOf('meta') === 0 && site !== 'meta') {
 			site = site.substring(4);
-			
+
 			if (site.indexOf('.') === 0)
 				site = site.substring(1);
-				
+
 			prefix = prefix + 'meta.';
 		}
-		
+
 		first = site.substring(0, 1);
 		rest = site.substring(1);
-		
+
 		switch (first) {
 			case '8':
 				if (rest == 'bitlavapwnpwniebossstagesixforhelp')
@@ -1266,7 +1292,7 @@ inject(livequery, bindas, expressions, function ($) {
 				result = site + '.stackexchange.com';
 				break;
 		}
-		
+
 		return 'http://' + prefix + result;
 	}
 
@@ -1276,10 +1302,10 @@ inject(livequery, bindas, expressions, function ($) {
 	function getHighlightSelector(match) {
 		if (isNumber(match))
 			return Selectors.getMessage(match);
-			
+
 		return Selectors.getSignature(match);
 	}
-	
+
 	/*
 	 * Adds highlighting to the matched elements
 	 */
@@ -1288,14 +1314,14 @@ inject(livequery, bindas, expressions, function ($) {
 			$(this).addClass('highlight');
 		});
 	}
-	
+
 	/*
 	 * Removes highlighting from the match elements
 	 */
 	function removeHighlight(match) {
 		$(getHighlightSelector(match)).expire().removeClass('highlight');
 	}
-	
+
 	/*
 	 * Creates a clip item
 	 */
@@ -1345,7 +1371,7 @@ inject(livequery, bindas, expressions, function ($) {
 
 		return li;
 	}
-	
+
 	// Define all of the styles
 	// TS: We might want to break this into smaller pieces
 	ChatExtension.style({
@@ -1478,7 +1504,7 @@ function expressions($) {
 			},
 			regexFlags = 'ig',
 			regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g, ''), regexFlags);
-			
+
 		return regex.test(jQuery(elem)[attr.method](attr.property));
 	};
 }
@@ -1495,7 +1521,7 @@ function bindas($) {
 				for (var i = 0; i < s.length; ++i) {
 					this.bindAs(nth, s[i], data, fn);
 				}
-				
+
 				return this;
 			}
 
