@@ -136,7 +136,6 @@ consistent with [these criteria](http://meta.stackoverflow.com/questions/43019/h
 Note that while editors can be notified, only the **last** editor's name will show up in the list. 
 
 ##SEReputationAuditHelper
-
 This script adds certain useful information to the reputation audit page (`/reputation` on all SE 2.0 sites): 
 
 * Autolinkifies the post ID associated with each reputation event
@@ -144,9 +143,12 @@ This script adds certain useful information to the reputation audit page (`/repu
 * Adds a links to reputation audit pages for all other SE sites for faster navigation
 
 ##SEChatFaviconNotifier
-
 ![Chatroom favicons with different numbers of unread message counts](http://i.imgur.com/llq97.png)
 
 Adds unread count and @-mention notifications directly to the favicon of 
 the chatroom page. The circle shows the number of unread messages and 
 turns green when someone @-mentions you.
+
+##SECommentLinkHelper
+Automatically converts raw Stack Exchange question links in comments into their
+correctly-titled `[title](link)` syntax equivalents before posting.
