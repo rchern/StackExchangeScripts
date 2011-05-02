@@ -76,8 +76,13 @@ inject(function ($) {
 		function callback(data, domain) {
 			lock = lock - 1 === 0 ? -1 : lock - 1;
 		
-			if (!data.questions || !data.questions.length)
+			if (!data.questions || !data.questions.length) {
+				if (lock < 0) {
+					submit();
+				}
+			
 				return;
+			}
 		
 			data.domain = domain;
 			
