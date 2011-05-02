@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name          Comment link filter
+// @name          SE Comment Link Helper
 // @description   A hook to transform raw links to properly titled links in comments
 // @include       http://stackoverflow.com/*
 // @include       http://meta.stackoverflow.com/*
@@ -94,12 +94,13 @@ inject(function ($) {
 			if (results.length) {
 				for (i = 0; i < results.length; ++i) {
 					for (j = 0; j < results[i].questions.length; ++j) {
-						pattern = '(?:^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].questions[j].question_id + '(?:/[^\\s/]*)?(/[0-9]+)?(#[^\\s]+)?';
-						value = value.replace(new RegExp(pattern, 'i'), function (s, question, trailing, anchor) {
+						pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].questions[j].question_id + '(?:/[^\\s/]*)?(/[0-9]+)?(#[^\\s]+)?';
+						value = value.replace(new RegExp(pattern, 'i'), function (s, leading, question, trailing, anchor) {
+							leading = leading || '';
 							trailing = trailing || '';
 							anchor = anchor || '';
 						
-							return '[' + results[i].questions[j].title + '](http://' + results[i].domain + '/' +
+							return leading + '[' + results[i].questions[j].title + '](http://' + results[i].domain + '/' +
 								(question === 'questions' && trailing === '' ? 'q' : question) + '/' + results[i].questions[j].question_id +
 								(question === 'q' ? '' : trailing) + anchor + ')';
 						});
