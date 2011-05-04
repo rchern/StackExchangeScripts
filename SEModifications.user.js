@@ -181,9 +181,8 @@ with_jquery(function ($) {
 			// First from the comments
 			target.closest('.comments').find('.comment-user').each(add);
 			// Then from the post signature of the last editor (if present)
-			if (postSignatures.length > 1) {
-				postSignatures.eq(0).find('.user-details a:first').each(add);
-			}
+			// Also the post author now, by popular demand
+			postSignatures.find('.user-details a:first').each(add);
 			
 			// Add the auto-complete options tabber
 			target.bind('keydown', tabselect);
