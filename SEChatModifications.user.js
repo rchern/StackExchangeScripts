@@ -85,17 +85,29 @@ inject(livequery, bindas, expressions, function ($) {
 		 * Associates domains with functions that produce pseudo-oneboxes
 		 */
 		this.associate = function (domain, fn) {
-			domain = domain.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+).*/i);
+			if (typeof domain === 'string') {
+				var assignment = domain.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+).*/i);
 
-			if (!domain)
-				throw new Error("The domain " + domain + " does not look valid");
+				if (!assignment)
+					throw new Error("The domain " + domain + " does not look valid");
 
-			domain = domain[1].toLowerCase();
+				domain = assignment[1].toLowerCase();
 
-			if (Oneboxes[domain])
-				throw new Error("The domain " + domain + " is already onebox-associated");
+				if (Oneboxes[domain])
+					throw new Error("The domain " + domain + " is already onebox-associated");
 
-			Oneboxes[domain] = fn;
+				Oneboxes[domain] = fn;
+			} else if (domain instanceof RegExp) {
+				if (!Oneboxes['_regex'])
+					Oneboxes['_regex'] = [];
+
+				Oneboxes['_regex'].push({
+					'pattern': domain,
+					'handler': fn
+				});
+			} else {
+				throw new Error("The provided domain is not an acceptable type");
+			}
 		}
 
 		/*
@@ -112,7 +124,7 @@ inject(livequery, bindas, expressions, function ($) {
 				} catch (ex) {
 					if (ex.message)
 						ChatExtension.notify(ex.message);
-				
+
 					result = CommandState.Failed;
 				}
 			}
@@ -248,16 +260,16 @@ inject(livequery, bindas, expressions, function ($) {
 		for (var i = 0; i < Highlights.items.length; ++i) {
 			addHighlight(Highlights.items[i]);
 		}
-		
+
 		// Add default Vimeo onebox support
 		ChatExtension.associate('vimeo.com', function (domain, path) {
 			var id = path.match(/^\/([0-9]+)/) || path.match(/\/channels\/[\d\w]+#([0-9]+)/) || path.match(/\/groups\/[\d\w]+\/videos\/([0-9]+)/);
-			
+
 			if (!id || !id[1])
 				throw new Error("The Vimeo URL " + path + " is unsupported");
-			
+
 			id = id[1];
-			
+
 			$.ajax({
 				url: 'http://vimeo.com/api/v2/video/' + id + '.json',
 				dataType: 'jsonp',
@@ -275,6 +287,33 @@ inject(livequery, bindas, expressions, function ($) {
 					})(data[0].title, data[0].url, data[0].user_name);
 				}
 			});
+		});
+
+		// Add comment oneboxer
+		ChatExtension.associate(/^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com\/[^\s]+#comment-[0-9]+$/i, function (domain, path) {
+			var id = path.match(/#comment-([0-9]+)$/);
+
+			if (!id || isNaN(id = parseInt(id[1])))
+				throw new Error("This should never happen, but you don't have a valid comment ID");
+
+			$.getJSON('http://api.' + domain + '/1.1/comments/' + id + '?jsonp=?',
+				(function (d, p) {
+					var domain = d, path = p;
+
+					return function (data) {
+						if (!data.comments || !data.comments.length) {
+							ChatExtension.notify('The comment ID ' + id + ' was not found');
+
+							return;
+						}
+
+						var comment = data.comments[0];
+
+						$('#input').val('> ' +  $('<span>').html(comment.body).text() + ' – ' + comment.owner.display_name +
+							' [' + ToRelativeTimeMini(comment.creation_date, true) + '](http://' + domain + path + ')');
+						$('#sayit-button').click();
+					};
+				})(domain, path));
 		});
 
 		// Show the message ID and timestamp on each message
@@ -600,11 +639,22 @@ inject(livequery, bindas, expressions, function ($) {
 		if (!url)
 			throw new Error("Invalid URL " + url);
 
-		if (!Oneboxes[url[2]])
-			throw new Error("The domain " + url[2] + " does not have associated onebox support");
+		var handler;
 
-		Oneboxes[url[2]](url[1], url[3]);
-		
+		if (!(handler = Oneboxes[url[2]])) {
+			if (Oneboxes['_regex']) {
+				for (var i = 0; i < Oneboxes['_regex'].length && !handler; ++i) {
+					if (Oneboxes['_regex'][i].pattern.test(url[1] + url[3]))
+						handler = Oneboxes['_regex'][i].handler;
+				}
+			}
+
+			if (!handler)
+				throw new Error("The domain " + url[2] + " does not have associated onebox support");
+		}
+
+		handler(url[1], url[3]);
+
 		return CommandState.SucceededDoClear;
 	});
 
