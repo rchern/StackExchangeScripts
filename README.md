@@ -62,6 +62,12 @@ are currently supported:
   * `http://vimeo.com/{video-id}`
   * `http://vimeo.com/channels/{channel-name}#{video-id}`
   * `http://vimeo.com/category/{group-name}/videos/{video-id}`
+  
+* **Stack Exchange:** Comment links will be turned into a `>` quote with a link
+  back to the comment on the site.
+  
+  Supported URL formats:
+  * `http://*.stackexchange.com/...#comment-{comment-id}`
 
 ### Highlighting messages
 
