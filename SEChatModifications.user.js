@@ -29,7 +29,8 @@ inject(livequery, bindas, expressions, function ($) {
 	// Setup the selector shortcuts
 	var Selectors = {
 		'getMessage': function getMessage(id) {
-			validate('number');
+			if (id)
+				validate('number');
 
 			return id ? '#message-' + id : '.user-container.mine:last .message:last';
 		},
