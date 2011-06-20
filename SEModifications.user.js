@@ -473,9 +473,89 @@ with_jquery(function ($) {
 	
 	/*
 	 * Initializes functionality that only applies to the search results page
-	 *   - Removing tags from search results
+	 *   - Removing/untaggifying tags from search results
 	 */
 	function initSearchResults() {
+		var tagpage = false;
 	
+		if (location.pathname.indexOf('/search') !== 0 &&
+				!(tagpage = (location.pathname.indexOf('/questions/tagged/') === 0))) {
+			return;
+		}
+		
+		function on() {
+			$(this).animate({ 'opacity': 1 }, 750);
+		}
+		
+		function off() {
+			$(this).animate({ 'opacity': 0 }, 750);
+		}
+		
+		var criteria,
+			tags = $('#sidebar .tagged a.post-tag');
+			
+		tags.each(function () {
+			var tag = $(this),
+				wrapper = $('<div class="tag-wrapper"></div>')
+					.append(
+						$('<span class="modify-options">')
+							.append(
+								$('<span class="quote-tag" title="change into search term">"</span>')
+									.click(function () {
+										updateCriteria(tag.text(), '"', true);
+										wrapper.fadeOutAndRemove();
+									})
+									.add('<span class="remove-tag" title="remove from search">\u00D7</span>')
+									.css({
+										'font-family': 'Consolas, monospace',
+										'border-radius': '7px 7px',
+										'display': 'inline-block',
+										'width': '15px',
+										'height': '15px',
+										'margin-right': '3px',
+										'text-align': 'center',
+										'border': '1px solid #915857',
+										'cursor': 'pointer'
+									})
+									.last()
+									.click(function () {
+										updateCriteria(tag.text(), false, true);
+									})
+									.end()
+							)
+							.css({
+								'margin-left': '5px',
+								'color': '#6C0000',
+								'font-weight': 'bold',
+								'opacity': 0
+							})
+							.hover(on, off)
+					)
+					.insertBefore(this)
+					.prepend(this);
+					
+			// Should just not add it in the first place, will fix later
+			if (tagpage && tags.length === 1) {
+				wrapper.find('.remove-tag').remove();
+			}
+		});
+		
+		function updateCriteria(existing, update, isTag) {
+			update = !update ? '' : update + existing + update;
+			
+			if (isTag) {
+				existing = '\\[' + existing + '\\]|' + existing;
+			}
+			
+			var search = $('#search'), input = search.find('input[name="q"]');
+			
+			// Temporary until I expand on this feature
+			input.val(
+				input.val()
+					.replace(new RegExp('(^| )(' + existing + ')( |$)'), '$1' + update + '$3')
+					.replace(/^ +|  +$/, '')
+			);
+			search.submit();
+		}
 	}
 });
