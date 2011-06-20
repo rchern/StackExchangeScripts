@@ -296,124 +296,131 @@ with_jquery(function ($) {
 	}
 	
 	$(function () {
-		// add timeline and history links to post menu
-		var questionURL = $("#question-header a").attr("href");
-		if (questionURL) {
-			var needsHighlight = false;
-
-			function linkifyComments(reference, url) {
-				reference.find('.comment')
-					.each(function() {
-						$('.comment-date', this).wrap('<a href="' + url.replace(/#.*/, '#' + this.id) + '" />');
-					});
-			}
-
-			function highlightComment(comment) {
-				if(!(comment = $(comment)).length) {
-					return false;
-				}
-
-				needsHighlight = false;
-
-				$(document).scrollTop(comment.offset().top);
-
-				comment.css({ 'opacity': 0 })
-					.animate({ 'opacity': 1 }, 1500, 'linear');
-
-				return true;
-			}
-
-			$(document).ajaxComplete(function(event, request, options) {
-				if (options) {
-					var id = options.url.match(/^\/posts\/([0-9]+)\/comments/);
-
-					if (id) {
-						id = id[1];
-
-						if (needsHighlight) {
-							highlightComment(location.hash);
-						}
-						
-						var post = $('#comments-' + id);
-						var url = $('#question #comments-' + id).length ? questionURL + '#' :
-							post.closest('.answer, #question')
-								.find(".post-menu a:contains('link'):first")
-								.attr("href");
-
-						linkifyComments(post, url);
-					}
-				}
-			});
-
-			var post = questionURL.replace("questions", "posts").replace(/\/[^\/]*$/, ""),
-				timeline = post + "/timeline",
-				revisions = post + "/revisions";
-			$("#question .post-menu").append("<span class='lsep'>|</span><a href='" + timeline + "'>timeline</a>");
-			$(".post-menu").each(function() {
-				var postLink = $(this).find("a:contains('link'):first").attr("href");
-
-				if (!revisions) {
-					revisions = "/posts"
-						+ postLink.replace(questionURL, "").replace(/#.*/, "")
-						+ "/revisions";
-				} else {
-					postLink = questionURL + '#';
-				}
-
-				$(this).append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>");
-
-				linkifyComments($(this).closest('.answer, #question'), postLink);
-
-				revisions = null;
-			});
-
-			// try our best to show a linked comment
-			var commentID = location.hash.match(/#(comment-[0-9]+)/);
-
-			if (commentID && !highlightComment(commentID[0])) {
-				// comment doesn't exist or it's hidden (more likely)
-				var post = location.pathname;
-					post = post.substring(post.lastIndexOf('/') + 1);
-
-				needsHighlight = true;
-
-				$((post.match(/^[0-9]+$/) ? '#answer-' + post : '#question') + ' .comments-link').click();
-			}
-			
-			$(document).bind('keydown', function (event) {
-				if (!event.shiftKey || event.which != 50)
-					return;
-				
-				var target = $(event.target);
-				
-				if (target.attr('name') === 'comment' && !target.hasClass('auto-complete')) {
-					new AutoComplete(target);
-				} else if (target.attr('name') !== 'comment') {
-					$('.auto-complete-matches').hide();
-				}
-			});
-			$(document).bind('click', function (event) {
-				$('.auto-complete-matches').hide();
-			});
-		}
-
-		// adds an audit link next to your rep in the header that leads to /reputation
+		// Initialize the general stuff here
 		var locationBits = location.hostname.split('.');
 		
 		if(locationBits[0] !== 'discuss' && (locationBits[0] !== 'meta' || locationBits[1] === 'stackoverflow'))
 			$("#hlinks-user .reputation-score").attr('title', 'your reputation; view reputation audit').parent().attr('href', '/reputation');
 		
+		initQuestions();
 		initPostRevisions();
+		initSearchResults();
 	});
 	
 	/*
 	 * Initializes functionality that only appears on the questions page:
 	 *   - Question timeline linking
 	 *   - Explicit post history linking
+	 *   - Comment linking
+	 *   - Hidden linked comment revealing
 	 *   - Comment auto-completion
 	 */
-	function initQuestion() {
-	
+	function initQuestions() {
+		if (location.pathname.search("^/questions/\\d+/") === -1) {
+			return;
+		}
+		
+		var needsHighlight = false,
+			question = $("#question-header a")[0].href;
+		
+		if (!question) {
+			return;
+		}
+
+		function linkifyComments(reference, url) {
+			reference.find('.comment')
+				.each(function() {
+					$('.comment-date', this).wrap('<a href="' + url.replace(/#.*/, '#' + this.id) + '" />');
+				});
+		}
+
+		function highlightComment(comment) {
+			if(!(comment = $(comment)).length) {
+				return false;
+			}
+
+			needsHighlight = false;
+
+			$(document).scrollTop(comment.offset().top);
+
+			comment.css({ 'opacity': 0 })
+				.animate({ 'opacity': 1 }, 1500, 'linear');
+
+			return true;
+		}
+
+		$(document).ajaxComplete(function(event, request, options) {
+			if (options) {
+				var id = options.url.match(/^\/posts\/([0-9]+)\/comments/);
+
+				if (id) {
+					id = id[1];
+
+					if (needsHighlight) {
+						highlightComment(location.hash);
+					}
+					
+					var post = $('#comments-' + id);
+					var url = $('#question #comments-' + id).length ? questionURL + '#' :
+						post.closest('.answer, #question')
+							.find(".post-menu a:contains('link'):first")
+							.attr("href");
+
+					linkifyComments(post, url);
+				}
+			}
+		});
+
+		var post = question.replace("questions", "posts").replace(/\/[^\/]*$/, ""),
+			timeline = post + "/timeline",
+			revisions = post + "/revisions";
+		$("#question .post-menu").append("<span class='lsep'>|</span><a href='" + timeline + "'>timeline</a>");
+		$(".post-menu").each(function() {
+			var postLink = $(this).find("a:contains('link'):first").attr("href");
+
+			if (!revisions) {
+				revisions = "/posts"
+					+ postLink.replace(question, "").replace(/#.*/, "")
+					+ "/revisions";
+			} else {
+				postLink = question + '#';
+			}
+
+			$(this).append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>");
+
+			linkifyComments($(this).closest('.answer, #question'), postLink);
+
+			revisions = null;
+		});
+
+		// try our best to show a linked comment
+		var commentID = location.hash.match(/#(comment-[0-9]+)/);
+
+		if (commentID && !highlightComment(commentID[0])) {
+			// comment doesn't exist or it's hidden (more likely)
+			var post = location.pathname;
+				post = post.substring(post.lastIndexOf('/') + 1);
+
+			needsHighlight = true;
+
+			$((post.match(/^[0-9]+$/) ? '#answer-' + post : '#question') + ' .comments-link').click();
+		}
+		
+		$(document).bind('keydown', function (event) {
+			if (!event.shiftKey || event.which != 50)
+				return;
+			
+			var target = $(event.target);
+			
+			if (target.attr('name') === 'comment' && !target.hasClass('auto-complete')) {
+				new AutoComplete(target);
+			} else if (target.attr('name') !== 'comment') {
+				$('.auto-complete-matches').hide();
+			}
+		});
+		$(document).bind('click', function (event) {
+			$('.auto-complete-matches').hide();
+		});
 	}
 	
 	/*
@@ -425,14 +432,10 @@ with_jquery(function ($) {
 			return;
 		}
 		
-		var lock = false;
-		
 		$('.revision, .owner-revision').find('a[href$="/view-source"]').one('click', function () {
 			if (lock) {
 				return;
 			}
-			
-			lock = true;
 			
 			var self = $(this),
 				original = self.text();
@@ -455,7 +458,6 @@ with_jquery(function ($) {
 					}).appendTo(this)[0].id = id;
 				},
 				'complete': function() {
-					lock = false;
 					self.text(original);
 				}
 			});
