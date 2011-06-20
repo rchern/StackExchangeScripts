@@ -403,28 +403,72 @@ with_jquery(function ($) {
 		if(locationBits[0] !== 'discuss' && (locationBits[0] !== 'meta' || locationBits[1] === 'stackoverflow'))
 			$("#hlinks-user .reputation-score").attr('title', 'your reputation; view reputation audit').parent().attr('href', '/reputation');
 		
-		// Uses ajax to load revision source inline
-		if(location.pathname.match(/^\/posts\/\d+\/revisions/)){
-			$('.revision a:contains("view source"), .owner-revision a:contains("view source")').one('click', function(){
-				var link = $(this).text('loading...');
-				
-				$.ajax({
-					url:this.href,
-					context: $(this).closest('tr').next().find('.post-text'),
-					success: function(data){
-						link.removeAttr('href').removeAttr('target');
-						
-						$('<pre>', {
-							text: $(data).filter('pre').text(),
-							css: {
-								whiteSpace: 'pre-wrap'
-							}
-						}).appendTo(this);
-					}
-				});
-				
-				return false;
-			});
-		}
+		initPostRevisions();
 	});
+	
+	/*
+	 * Initializes functionality that only appears on the questions page:
+	 *   - Question timeline linking
+	 *   - Explicit post history linking
+	 *   - Comment auto-completion
+	 */
+	function initQuestion() {
+	
+	}
+	
+	/*
+	 * Initializes functionality that only appears on the post revisions page:
+	 *   - Inline revision source loading
+	 */
+	function initPostRevisions() {
+		if (location.pathname.search("^/posts/\\d+/revisions") === -1) {
+			return;
+		}
+		
+		var lock = false;
+		
+		$('.revision, .owner-revision').find('a[href$="/view-source"]').one('click', function () {
+			if (lock) {
+				return;
+			}
+			
+			lock = true;
+			
+			var self = $(this),
+				original = self.text();
+				
+			self.text('loading...');
+			
+			$.ajax({
+				'url': this.href,
+				'context': self.closest('tr').next().find('.post-text')[0],
+				'success': function (response) {
+					var id = "inline-" + this.parentNode.id;
+				
+					self.removeAttr('target')[0].href = "#" + id;
+					
+					$('<pre>', {
+						'text': $(response).filter('pre').text(),
+						'css': {
+							'white-space': 'pre-wrap'
+						}
+					}).appendTo(this)[0].id = id;
+				},
+				'complete': function() {
+					lock = false;
+					self.text(original);
+				}
+			});
+			
+			return false;
+		});
+	}
+	
+	/*
+	 * Initializes functionality that only applies to the search results page
+	 *   - Removing tags from search results
+	 */
+	function initSearchResults() {
+	
+	}
 });
