@@ -33,9 +33,7 @@ function with_jquery(f) {
 };
 
 with_jquery(function ($) {
-	var profile = $('#hlinks-user a').filter(function () {
-			return this.href && this.href.match(/\/users\/\d+\/[^\/]+$/);
-		});
+	var profile = $('#hlinks-user a.profile-link'),
 		My = {
 			'name': profile.text(),
 			'profile': profile.attr('href')
