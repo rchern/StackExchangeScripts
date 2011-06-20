@@ -376,7 +376,7 @@ with_jquery(function ($) {
 			revisions = post + "/revisions";
 		$("#question .post-menu").append("<span class='lsep'>|</span><a href='" + timeline + "'>timeline</a>");
 		$(".post-menu").each(function() {
-			var postLink = $(this).find("a:contains('link'):first").attr("href");
+			var self = $(this), postLink = self.find("a:contains('link'):first").attr("href");
 
 			if (!revisions) {
 				revisions = "/posts"
@@ -386,9 +386,16 @@ with_jquery(function ($) {
 				postLink = question + '#';
 			}
 
-			$(this).append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>");
+			self.append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>")
+				.find('a').each(function () {
+					var self = $(this), text = self.text();
+					
+					if (text.indexOf(' ') !== -1) {
+						self.text(text.replace(' ', '\u00a0'));
+					}
+				});
 
-			linkifyComments($(this).closest('.answer, #question'), postLink);
+			linkifyComments(self.closest('.answer, #question'), postLink);
 
 			revisions = null;
 		});
