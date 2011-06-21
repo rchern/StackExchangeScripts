@@ -319,8 +319,8 @@ with_jquery(function ($) {
 		}
 		
 		var needsHighlight = false,
-			question = $("#question-header a")[0].href;
-		
+			question = $("#question-header a").attr('href');
+
 		if (!question) {
 			return;
 		}
@@ -359,7 +359,7 @@ with_jquery(function ($) {
 					}
 					
 					var post = $('#comments-' + id);
-					var url = $('#question #comments-' + id).length ? questionURL + '#' :
+					var url = $('#question #comments-' + id).length ? question + '#' :
 						post.closest('.answer, #question')
 							.find(".post-menu a:contains('link'):first")
 							.attr("href");
