@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name		SE Keyboard Navigation
 // @description	VIM like navigation of Stack Exchange sites
 // @include		http://stackoverflow.com/*
