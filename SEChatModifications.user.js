@@ -1443,6 +1443,9 @@ inject(livequery, bindas, expressions, function ($) {
 			'display': 'block',
 			'padding': '4px 8px'
 		},
+		'#input-area #inputerror a': {
+			'color': $('#about-room').css('color')
+		},
 		'.gm_room_list li a:hover': {
 			'background-color': '#eee',
 			'text-decoration': 'none'
