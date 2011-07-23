@@ -319,16 +319,17 @@ inject(livequery, bindas, expressions, function ($) {
 
 		// Show the message ID and timestamp on each message
 		$("#chat .message:not(.pending):not(.posted)").livequery(function () {
-			var id = this.id.replace("message-", "");
+			var id = this.id.replace("message-", ""), self = $(this);
 
-			if (!$(this).siblings('#id-' + id).length) {
-				var timestamp = new Date($(this).data().info.time * 1000);
+			if (!self.siblings('#id-' + id).length) {
+				var timestamp = new Date(self.data('info').time * 1000);
 				timestamp = "" + timestamp.getHours() + ":" + (timestamp.getMinutes() < 10 ? "0" + timestamp.getMinutes() : timestamp.getMinutes()) + ":" + (timestamp.getSeconds() < 10 ? "0" + timestamp.getSeconds() : timestamp.getSeconds());
-				$(this).prev(".timestamp").remove();
-				$('<div />').insertBefore(this)
+				self.prev(".timestamp").remove();
+				self.prepend($('<div />')
 					.text(id + ' ' + timestamp)
 					.addClass('timestamp')
-					.attr('id', 'id-' + id);
+					.css('line-height', '1.4em')
+					.attr('id', 'id-' + id));
 			}
 		});
 
@@ -1489,6 +1490,9 @@ inject(livequery, bindas, expressions, function ($) {
 			'padding': '0',
 			'background': '1px 0px url("http://or.sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
 			'cursor': 'pointer'
+		},
+		'.monologue .message:hover .timestamp' : {
+			'visibility': 'hidden'
 		},
 		'#chat-body .monologue.mine .message:hover .meta': {
 			'display': 'inline-block !important'
