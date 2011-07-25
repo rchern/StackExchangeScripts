@@ -73,11 +73,17 @@ inject(livequery, bindas, expressions, function ($) {
 		/*
 		 * Defines new chat extension commands, allowing outside functions to plug into the existing userscript infrastructure
 		 */
-		this.define = function (name, fn) {
+		this.define = function (name, fn, help) {
 			name = name.toLowerCase();
+			
+			if (typeof fn !== 'function')
+				throw new Error("The function assigned to " + name + " is not a function");
 
 			if (Commands[name])
 				throw new Error("The command " + name + " is already defined");
+				
+			if (help && typeof help === 'string')
+				fn.helptext = help;
 
 			Commands[name] = fn;
 		};
@@ -413,8 +419,22 @@ inject(livequery, bindas, expressions, function ($) {
 	});
 
 	// Define the help command
-	ChatExtension.define('help', function () {
-		ChatExtension.notify($('<span />').text('List of recognized commands:').add(getCommands()), 7.5E3);
+	ChatExtension.define('help', function (command) {
+		if (!command) {
+			ChatExtension.notify($('<span />').text('List of recognized commands:').add(getCommands()), 7.5E3);
+			
+			return;
+		}
+		
+		command = command.toLowerCase();
+		
+		if (!Commands[command])
+			throw new Error("Unable to get help for unkown command " + command);
+			
+		if (!Commands[command].helptext)
+			throw new Error("No additional help for the command " + command);
+			
+		ChatExtension.notify(Commands[command].helptext);
 	});
 
 	// Define the message history command
