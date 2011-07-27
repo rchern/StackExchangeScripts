@@ -193,11 +193,16 @@ inject(livequery, bindas, expressions, function ($) {
 		this.Selectors = Selectors;
 		this.CommandState = CommandState;
 	};
+	
+	function reply(id) {
+		$('#input').val(':' + id + ' ' + $('#input').val().replace(/^:\d+\s*/, ''));
+	}
 
 	// Define the on ready activities
 	$(function () {
 		var input = $('#input'),
-			page = $(document);
+			page = $(document),
+			stars = $('#starred-posts');
 
 		// Add a handler for Ctrl + Space message resubmission
 		page.bindAs(0, 'keydown', function (event) {
@@ -257,6 +262,33 @@ inject(livequery, bindas, expressions, function ($) {
 		page.bindAs(0, 'keydown', Navigation.navigate);
 		page.bindAs(0, 'keypress', Navigation.suppress);
 		$('#chat .message').livequery(Navigation.update);
+		
+		// Add handler for stars list
+		stars.ajaxComplete(function (event, xhr, settings) {
+			if (settings.url.search(/^\/chats\/stars\/\d+/) !== 0) {
+				return;
+			}
+			
+			$(this).find('li').each(function () {
+				var id = this.id.replace(/^summary_/, '');
+				
+				$('<span title="reply to this message" class="quick-unstar newreply" />').appendTo(this).click(function (event) {
+					input.focus();
+					reply(id);
+					event.stopImmediatePropagation();
+				});
+			});
+		});
+		
+		// Defer getting the background image until it's available
+		ChatExtension.style({
+			'#starred-posts .newreply' : {
+				'background-image': $('<span class="newreply">').hide()
+					.appendTo(document.body)
+					.wrap('<div class="message">')
+					.css('background-image')
+			}
+		});
 
 		// Add a handler to update clips across tabs
 		$(window).bindAs(0, 'focus', function (event) {
@@ -1122,7 +1154,7 @@ inject(livequery, bindas, expressions, function ($) {
 						$('#input').focus();
 
 					if (command == 'reply') {
-						$('#input').val(':' + message + ' ' + $('#input').val().replace(/^:\d+\s*/, ''));
+						reply(message);
 					} else if (command == 'peek') {
 						if (parent) {
 							if ((replied = $('#message-' + parent + ' > .content')).length) {
@@ -1561,6 +1593,14 @@ inject(livequery, bindas, expressions, function ($) {
 		'.easy-navigation-subtle .reference-id': {
 			'float': 'right',
 			'margin-right': '5px'
+		},
+		'#starred-posts .newreply' : {
+			'display': 'inline-block',
+			'background-repeat': 'no-repeat',
+			'background-position': '0 -43px',
+			'width': '10px',
+			'height': '10px',
+			'cursor': 'pointer'
 		}
 	});
 });
