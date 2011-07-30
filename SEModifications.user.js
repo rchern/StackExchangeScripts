@@ -297,8 +297,20 @@ with_jquery(function ($) {
 		// Initialize the general stuff here
 		var locationBits = location.hostname.split('.');
 		
-		if(locationBits[0] !== 'discuss' && (locationBits[0] !== 'meta' || locationBits[1] === 'stackoverflow'))
-			$("#hlinks-user .reputation-score").attr('title', 'your reputation; view reputation audit').parent().attr('href', '/reputation');
+		if(locationBits[0] !== 'discuss' && (locationBits[0] !== 'meta' || locationBits[1] === 'stackoverflow')) {
+			if (window.profileLink) {
+				var initialized = false;
+				
+				profileLink._show = profileLink.show;
+				profileLink.show = function (u, v) {
+					profileLink._show(u, v);
+					
+					if (!initialized && (initialized = true)) {
+						$('<li><a href="/reputation" title="view reputation audit">audit</a></li>').appendTo('.profile-links');
+					}
+				};
+			}
+		}
 		
 		initQuestions();
 		initPostRevisions();
