@@ -383,8 +383,13 @@ with_jquery(function ($) {
 
 		var post = question.replace("questions", "posts").replace(/\/[^\/]*$/, ""),
 			timeline = post + "/timeline",
-			revisions = post + "/revisions";
-		$("#question .post-menu").append("<span class='lsep'>|</span><a href='" + timeline + "'>timeline</a>");
+			revisions = post + "/revisions",
+			questionPost = $('#question'),
+			ownedByMe = $('.post-signature', questionPost).length == 2 && $('.post-signature.owner .user-details a:first').attr('href') === My.profile;
+		$(".post-menu", questionPost).append(
+			(ownedByMe ? "<br>" : "<span class='lsep'>|</span>") +
+			"<a " + (ownedByMe ? 'style="line-height:1.8em;"' : "") + "href='" + timeline + "'>timeline</a>"
+		);
 		$(".post-menu").each(function() {
 			var self = $(this), postLink = self.find("a:contains('link'):first").attr("href");
 
