@@ -454,11 +454,7 @@ with_jquery(function ($) {
 			return;
 		}
 		
-		$('.revision, .owner-revision').find('a[href$="/view-source"]').one('click', function () {
-			if (lock) {
-				return;
-			}
-			
+		$('.revision, .owner-revision').find('a[href$="/view-source"]').one('click', function () {			
 			var self = $(this),
 				original = self.text();
 				
