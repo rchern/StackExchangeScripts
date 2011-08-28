@@ -1070,13 +1070,16 @@ inject(livequery, bindas, expressions, function ($) {
 		 * Performs the bulk of the keyboard navigation work
 		 */
 		this.navigate = function (event, n) {
+			if (event.which == 17)
+				return true;
+		
 			unpeek();
 
 			if (isCtrl(event) && event.which == 40) {
 				$(document).scrollTop($(document).height());
 				$('#input').focus();
 
-				return true;
+				return false;
 			}
 
 			if (!active)
@@ -1213,7 +1216,8 @@ inject(livequery, bindas, expressions, function ($) {
 		 * Suppresses events that the keyboard navigation will handle
 		 */
 		this.suppress = function (event) {
-			if (active && handles((event.which < 123 && event.which > 96 ? event.which - 32 : event.which))) {
+			if (active && (handles((event.which < 123 && event.which > 96 ? event.which - 32 : event.which)) || 
+					event.which == 33 || event.which == 38 || event.which == 34 || event.which == 40)) {
 				event.stopImmediatePropagation();
 				event.preventDefault();
 			}
