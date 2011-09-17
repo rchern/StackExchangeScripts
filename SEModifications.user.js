@@ -428,21 +428,23 @@ with_jquery(function ($) {
 			$((post.match(/^[0-9]+$/) ? '#answer-' + post : '#question') + ' .comments-link').click();
 		}
 		
-		$(document).bind('keydown', function (event) {
-			if (!event.shiftKey || event.which != 50)
-				return;
-			
-			var target = $(event.target);
-			
-			if (target.attr('name') === 'comment' && !target.hasClass('auto-complete')) {
-				new AutoComplete(target);
-			} else if (target.attr('name') !== 'comment') {
+		if (!StackExchange.options.enableTabCompletion) {
+			$(document).bind('keydown', function (event) {
+				if (!event.shiftKey || event.which != 50)
+					return;
+				
+				var target = $(event.target);
+				
+				if (target.attr('name') === 'comment' && !target.hasClass('auto-complete')) {
+					new AutoComplete(target);
+				} else if (target.attr('name') !== 'comment') {
+					$('.auto-complete-matches').hide();
+				}
+			});
+			$(document).bind('click', function (event) {
 				$('.auto-complete-matches').hide();
-			}
-		});
-		$(document).bind('click', function (event) {
-			$('.auto-complete-matches').hide();
-		});
+			});
+		}
 	}
 	
 	/*
