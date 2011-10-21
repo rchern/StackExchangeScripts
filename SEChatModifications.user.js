@@ -1661,9 +1661,7 @@ function bindas($) {
 
 				$.event.add(elem, type, fn, data);
 
-				var elemData = jQuery.data(elem);
-				var eventKey = elem.nodeType ? 'events' : '__events__';
-				var events = elemData[eventKey];
+				var events = $(elem).data(elem.nodeType ? 'events' : '__events__');
 
 				if (events && typeof events === 'function') {
 					events = events.events;
