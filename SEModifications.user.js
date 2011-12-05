@@ -123,13 +123,14 @@ with_jquery(function ($) {
 		);
 		$(".post-menu").each(function() {
 			var self = $(this),
-				postLink = question;
+				postLink = question,
+				id = self.find("a:contains('link')")[0].href.replace(/^.*\/a\//, "").replace(/\/\d+(?:#.*)?$/, "");;
 				
 			console.log("post-menu each");
 
 			if (!revisions) {
-				revisions = "/posts/" + postLink + "/revisions";
-				postLink = postLink + '/' + self.find("a:contains('link')")[0].href.replace(/^.*\/a\//, "").replace(/\/\d+(?:#.*)?$/, "");
+				revisions = "/posts/" + id + "/revisions";
+				postLink = postLink + '/' + id;
 			}
 
 			self.append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>")
