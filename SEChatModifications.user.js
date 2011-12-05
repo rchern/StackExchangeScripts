@@ -329,8 +329,8 @@ inject(livequery, bindas, expressions, function ($) {
 		});
 
 		// Add comment oneboxer
-		ChatExtension.associate(/^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com\/[^\s]+#comment-[0-9]+$/i, function (domain, path) {
-			var id = path.match(/#comment-([0-9]+)$/);
+		ChatExtension.associate(/^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com\/[^\s]+#comment-?([0-9]+)(?:_[0-9]+)?$/i, function (domain, path) {
+			var id = path.match(/#comment-?([0-9]+)(?:_[0-9]+)?$/);
 
 			if (!id || isNaN(id = parseInt(id[1])))
 				throw new Error("This should never happen, but you don't have a valid comment ID");
