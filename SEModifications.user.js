@@ -68,8 +68,6 @@ with_jquery(function ($) {
 	 *   - Question timeline linking
 	 *   - Explicit post history linking
 	 *   - Comment linking
-	 *   - Hidden linked comment revealing
-	 *   - Comment auto-completion
 	 */
 	function initQuestions() {
 		if (location.pathname.search("^/questions/\\d+/") === -1) {
@@ -77,32 +75,23 @@ with_jquery(function ($) {
 		}
 		
 		var needsHighlight = false,
-			question = $("#question-header a").attr('href');
+			question = $("#question-header a")[0].href;
 
 		if (!question) {
 			return;
 		}
 
 		function linkifyComments(reference, url) {
+			console.log("linkifyComments");
+		
+			var id = (reference.hasClass('comments') ? reference : reference.find('.comments'))[0].id.replace('comments-', '');
+			
 			reference.find('.comment')
 				.each(function() {
-					$('.comment-date', this).wrap('<a href="' + url.replace(/#.*/, '#' + this.id) + '" />');
+					$('.comment-date', this).wrap(
+						'<a href="' + url.replace(/#.*/, '') + '#' + this.id.replace('-', '') + '_' + id + '" />'
+					);
 				});
-		}
-
-		function highlightComment(comment) {
-			if(!(comment = $(comment)).length) {
-				return false;
-			}
-
-			needsHighlight = false;
-
-			$(document).scrollTop(comment.offset().top);
-
-			comment.css({ 'opacity': 0 })
-				.animate({ 'opacity': 1 }, 1500, 'linear');
-
-			return true;
 		}
 
 		$(document).ajaxComplete(function(event, request, options) {
@@ -111,16 +100,12 @@ with_jquery(function ($) {
 
 				if (id) {
 					id = id[1];
-
-					if (needsHighlight) {
-						highlightComment(location.hash);
-					}
 					
-					var post = $('#comments-' + id);
-					var url = $('#question #comments-' + id).length ? question + '#' :
-						post.closest('.answer, #question')
-							.find(".post-menu a:contains('link'):first")
-							.attr("href");
+					var post = $('#comments-' + id), url = question;
+					
+					if (!post.closest('#question').length) {
+						url = question + '/' + id;
+					}
 
 					linkifyComments(post, url);
 				}
@@ -137,14 +122,14 @@ with_jquery(function ($) {
 			"<a " + (ownedByMe ? 'style="line-height:1.8em;"' : "") + "href='" + timeline + "'>timeline</a>"
 		);
 		$(".post-menu").each(function() {
-			var self = $(this), postLink = self.find("a:contains('link'):first").attr("href");
+			var self = $(this),
+				postLink = question;
+				
+			console.log("post-menu each");
 
 			if (!revisions) {
-				revisions = "/posts/"
-					+ postLink.replace(/^.*\/a\//, "").replace(/\/\d+(?:#.*)?$/, "")
-					+ "/revisions";
-			} else {
-				postLink = question + '#';
+				revisions = "/posts/" + postLink + "/revisions";
+				postLink = postLink + '/' + self.find("a:contains('link')")[0].href.replace(/^.*\/a\//, "").replace(/\/\d+(?:#.*)?$/, "");
 			}
 
 			self.append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>")
@@ -160,19 +145,6 @@ with_jquery(function ($) {
 
 			revisions = null;
 		});
-
-		// try our best to show a linked comment
-		var commentID = location.hash.match(/#(comment-[0-9]+)/);
-
-		if (commentID && !highlightComment(commentID[0])) {
-			// comment doesn't exist or it's hidden (more likely)
-			var post = location.pathname;
-				post = post.substring(post.lastIndexOf('/') + 1);
-
-			needsHighlight = true;
-
-			$((post.match(/^[0-9]+$/) ? '#answer-' + post : '#question') + ' .comments-link').click();
-		}
 	}
 	
 	/*
