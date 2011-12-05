@@ -60,7 +60,7 @@ with_jquery(function ($) {
 		
 		initQuestions();
 		initPostRevisions();
-		initSearchResults();
+		//initSearchResults();
 	});
 	
 	/*
