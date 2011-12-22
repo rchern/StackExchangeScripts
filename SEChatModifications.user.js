@@ -219,6 +219,7 @@ inject(livequery, bindas, expressions, function ($) {
 		});
 
 		// Add a handler to remove the overlay
+		/*
 		page.bindAs(0, 'click keydown', function (event) {
 			var error = $('#inputerror');
 
@@ -226,6 +227,7 @@ inject(livequery, bindas, expressions, function ($) {
 				error.stop(true, true).fadeOut('slow');
 			}
 		});
+		*/
 
 		// Add a handler for /commands
 		input.bindAs(0, 'keydown', function (event) {
@@ -258,7 +260,7 @@ inject(livequery, bindas, expressions, function ($) {
 		// Add keyboard navigation handlers
 		input.bindAs(0, 'keydown', Navigation.launch);
 		input.bindAs(0, 'focus', Navigation.deselect);
-		page.bindAs(0, 'click', Navigation.deselect);
+		//page.bindAs(0, 'click', Navigation.deselect);
 		page.bindAs(0, 'keydown', Navigation.navigate);
 		page.bindAs(0, 'keypress', Navigation.suppress);
 		$('#chat .message').livequery(Navigation.update);
