@@ -1677,7 +1677,7 @@ function bindas($) {
 						offset = handlers.delegateCount;
 					}
 
-					if (handlers && handlers.length > nth + 1) {
+					if (handlers && handlers.length > offset + nth + 1) {
 						handlers.splice(offset + nth, 0, handlers.splice(handlers.length - 1, 1)[0]);
 					}
 				}
