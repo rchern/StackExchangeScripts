@@ -82,8 +82,6 @@ with_jquery(function ($) {
 		}
 
 		function linkifyComments(reference, url) {
-			console.log("linkifyComments");
-		
 			var id = (reference.hasClass('comments') ? reference : reference.find('.comments'))[0].id.replace('comments-', '');
 			
 			reference.find('.comment')
@@ -125,8 +123,6 @@ with_jquery(function ($) {
 			var self = $(this),
 				postLink = question,
 				id = self.find("a:contains('link')")[0].href.replace(/^.*\/a\//, "").replace(/\/\d+(?:#.*)?$/, "");;
-				
-			console.log("post-menu each");
 
 			if (!revisions) {
 				revisions = "/posts/" + id + "/revisions";
