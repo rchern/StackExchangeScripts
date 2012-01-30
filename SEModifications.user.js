@@ -81,35 +81,6 @@ with_jquery(function ($) {
 			return;
 		}
 
-		function linkifyComments(reference, url) {
-			var id = (reference.hasClass('comments') ? reference : reference.find('.comments'))[0].id.replace('comments-', '');
-			
-			reference.find('.comment')
-				.each(function() {
-					$('.comment-date', this).wrap(
-						'<a href="' + url.replace(/#.*/, '') + '#' + this.id.replace('-', '') + '_' + id + '" />'
-					);
-				});
-		}
-
-		$(document).ajaxComplete(function(event, request, options) {
-			if (options) {
-				var id = options.url.match(/^\/posts\/([0-9]+)\/comments/);
-
-				if (id) {
-					id = id[1];
-					
-					var post = $('#comments-' + id), url = question;
-					
-					if (!post.closest('#question').length) {
-						url = question + '/' + id;
-					}
-
-					linkifyComments(post, url);
-				}
-			}
-		});
-
 		var post = question.replace("questions", "posts").replace(/\/[^\/]*$/, ""),
 			timeline = post + "/timeline",
 			revisions = post + "/revisions",
@@ -137,8 +108,6 @@ with_jquery(function ($) {
 						self.text(text.replace(' ', '\u00a0'));
 					}
 				});
-
-			linkifyComments(self.closest('.answer, #question'), postLink);
 
 			revisions = null;
 		});
