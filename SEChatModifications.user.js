@@ -197,6 +197,55 @@ inject(livequery, bindas, expressions, function ($) {
 	function reply(id) {
 		$('#input').val(':' + id + ' ' + $('#input').val().replace(/^:\d+\s*/, ''));
 	}
+    
+    function markdownify(element) {
+        if (element.children.length) {
+            var first = element.children[0];
+
+            if (first.classList.contains('full')) {
+                return element.textContent;
+            } else if (first.classList.contains('ob-post')) {
+                var link = first.querySelector('.ob-post-title > a');
+                element = document.createElement('span');
+
+                if (link) {
+                    element.appendChild(link);
+                }
+            }
+
+            for (var i = element.children.length - 1; i >= 0; --i) {
+                markdownify(element.children[i]);
+            }
+        }
+
+        if (element.parentNode) {
+            var format = '';
+
+            if (element.tagName === 'B') {
+                format = '**%s**';
+            } else if (element.tagName === 'I') {
+                format = '*%s*';
+            } else if (element.tagName === 'A') {
+                if (!/\[tag:.*\]/.test(element.innerHTML)) {
+                    format = '[%s](' + element.href + ')';
+                } else {
+                    format = '%s';
+                }
+            } else if (element.tagName === 'CODE') {
+                format = '`%s`';
+            } else if (element.tagName === 'SPAN' && element.className === 'ob-post-tag') {
+                format = '[tag:%s]';
+            } else {
+                return;
+            }
+
+            format = format.replace('%s', element.innerHTML);
+
+            element.parentNode.replaceChild(document.createTextNode(format), element);
+        } else {
+            return element.innerHTML;
+        }
+    }
 
 	// Define the on ready activities
 	$(function () {
@@ -348,9 +397,12 @@ inject(livequery, bindas, expressions, function ($) {
 							return;
 						}
 
-						var comment = data.comments[0];
+						var comment = data.comments[0],
+                            wrapper = document.createElement('span');
+                            
+                        $(wrapper).html(comment.body);
 
-						$('#input').val('> ' +  $('<span>').html(comment.body).text() + ' – ' + comment.owner.display_name +
+						$('#input').val('> ' +  markdownify(wrapper) + ' – ' + comment.owner.display_name +
 							' [' + ToRelativeTimeMini(comment.creation_date, true) + '](http://' + domain + path + ')');
 						$('#sayit-button').click();
 					};
