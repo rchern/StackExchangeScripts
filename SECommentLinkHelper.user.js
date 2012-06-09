@@ -22,126 +22,140 @@
 // ==/UserScript==
 
 function inject() {
-	for (var i = 0; i < arguments.length; ++i) {
-		if (typeof(arguments[i]) == 'function') {
-			var script = document.createElement('script');
+    for (var i = 0; i < arguments.length; ++i) {
+        if (typeof(arguments[i]) == 'function') {
+            var script = document.createElement('script');
 
-			script.type = 'text/javascript';
-			script.textContent = '(' + arguments[i].toString() + ')(jQuery)';
+            script.type = 'text/javascript';
+            script.textContent = '(' + arguments[i].toString() + ')(jQuery)';
 
-			document.body.appendChild(script);
-		}
-	}
+            document.body.appendChild(script);
+        }
+    }
 }
 
-inject(function ($) {	
-	function HijackedTextarea(t) {
-		var textarea = t.addClass('link-hijacked'),
-			form = textarea.closest('form'),
-			link = new RegExp('(?:^|[^\\(])http://([^\\s/]+)/q(?:uestions)?/([0-9]+)', 'ig'),
-			lock = 0,
-			submitComment = form.data('events').submit[0].handler,
-			validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
-			results = [];
-			
-		form.data('events').submit[0].handler = handler;
-		
-		function handler() {
-			if (lock)
-				return;
+inject(function ($) {
+    function HijackedTextarea(t) {
+        var textarea = t.addClass('link-hijacked')[0],
+            form = t.closest('form'),
+            link = new RegExp('(?:^|[^\\(])http://([^\\s/]+)/q(?:uestions)?/([0-9]+)', 'ig'),
+            lock = 0,
+            submitComment = form.data('events').submit[0].handler,
+            validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
+            miniLink = /(^|\s)(\[(?:[^\]]+)\]\(?:(?:(?:https?|ftp):\/\/[^)\s]+?)(?:\s(?:"|&quot;)(?:[^"]+?)(?:"|&quot;))?\))/g,
+            miniCode = /(^|\W)(`(?:.+?)`)(?=\W|$)/g,
+            results = [];
 
-			lock = -1;
-		
-			var url, ids = {}, count = 0;;
+        form.data('events').submit[0].handler = handler;
 
-			while (url = link.exec(textarea.val())) {
-				if (!ids[url[1]])
-					ids[url[1]] = []
-			
-				ids[url[1]].push(url[2]);
-				
-				++count;
-			}
-			
-			if (count)
-				request(ids, callback);
-			else
-				submit.call(form.eq(0));
+        function handler() {
+            if (lock)
+                return;
 
-			link.lastIndex = 0;
-			
-			return false;
-		}
-		
-		function callback(data, domain) {
-			lock = lock - 1 === 0 ? -1 : lock - 1;
-		
-			if (!data.questions || !data.questions.length) {
-				if (lock < 0) {
-					submit();
-				}
-			
-				return;
-			}
-		
-			data.domain = domain;
-			
-			results.push(data);
-			
-			if (lock < 0) {
-				submit();
-			}
-		}
-		
-		function submit() {
-			var i, j, pattern, value = textarea.val();
-		
-			if (results.length) {
-				for (i = 0; i < results.length; ++i) {
-					for (j = 0; j < results[i].questions.length; ++j) {
-						pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].questions[j].question_id + '(?:/[^\\s/]*)?(/[0-9]+)?(#[^\\s]+)?';
-						value = value.replace(new RegExp(pattern, 'i'), function (s, leading, question, trailing, anchor) {
-							leading = leading || '';
-							trailing = trailing || '';
-							anchor = anchor || '';
-						
-							return leading + '[' + results[i].questions[j].title + '](http://' + results[i].domain + '/' +
-								(question === 'questions' && trailing === '' ? 'q' : question) + '/' + results[i].questions[j].question_id +
-								(question === 'q' ? '' : trailing) + anchor + ')';
-						});
-					}
-				}
-			
-				textarea.val(value).keyup();
-			}
-			
-			submitComment.call(form.eq(0));
+            lock = -1;
 
-			results = [];
-			lock = 0;
-		}
-		
-		function request(ids, callback) {
-			for (var domain in ids) {
-				if (validSites.test(domain)) {
-					lock = lock < 0 ? 1 : lock + 1;
-					
-					$.getJSON('http://api.' + domain + '/1.1/questions/' + ids[domain].join(';') + '?jsonp=?',
-						(function (d) {
-							var domain = d;
-			
-							return function (data) {
-								callback(data, domain);
-							};
-						})(domain));
-				}
-			}
-		}
-	}
-	
-	$(document).ready(function () {
-		$('textarea[name="comment"]:not(.link-hijacked)').live('focus', function () {
-			new HijackedTextarea($(this));
-		});
-	});
+            var url, ids = {}, count = 0,
+                comment = textarea.value.replace(miniLink, "$1##").replace(miniCode, "$1##");
+
+            while (url = link.exec(comment)) {
+                if (!ids[url[1]])
+                    ids[url[1]] = []
+
+                ids[url[1]].push(url[2]);
+
+                ++count;
+            }
+
+            if (count)
+                request(ids, callback);
+            else
+                submit.call(form.eq(0));
+
+            link.lastIndex = 0;
+
+            return false;
+        }
+
+        function callback(data, domain) {
+            lock = lock - 1 === 0 ? -1 : lock - 1;
+
+            if (!data.questions || !data.questions.length) {
+                if (lock < 0) {
+                    submit();
+                }
+
+                return;
+            }
+
+            data.domain = domain;
+
+            results.push(data);
+
+            if (lock < 0) {
+                submit();
+            }
+        }
+
+        function submit() {
+            var i, j, pattern, swaps = [],
+                swapper = function (s, m1, m2) {
+                    swaps.push(m2);
+                    
+                    return m1 + "~%" + (swaps.length - 1) + "#";
+                },
+                comment = textarea.value;
+
+            if (results.length) {
+                comment = comment.replace(miniLink, swapper).replace(miniCode, swapper);
+            
+                for (i = 0; i < results.length; ++i) {
+                    for (j = 0; j < results[i].questions.length; ++j) {
+                        pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].questions[j].question_id + '(?:/[^\\s/]*)?(/[0-9]+)?(#[^\\s]+)?';
+                        comment = comment.replace(new RegExp(pattern, 'i'), function (s, leading, question, trailing, anchor) {
+                            leading = leading || '';
+                            trailing = trailing || '';
+                            anchor = anchor || '';
+
+                            return leading + '[' + results[i].questions[j].title + '](http://' + results[i].domain + '/' +
+                                (question === 'questions' && trailing === '' ? 'q' : question) + '/' + results[i].questions[j].question_id +
+                                (question === 'q' ? '' : trailing) + anchor + ')';
+                        });
+                    }
+                }
+
+                textarea.value = comment.replace(/~%(\d+)#/, function (s, m1) {
+                    return swaps[+m1];
+                });
+                $(textarea).trigger('keyup');
+            }
+
+            submitComment.call(form[0]);
+
+            results = [];
+            lock = 0;
+        }
+
+        function request(ids, callback) {
+            for (var domain in ids) {
+                if (validSites.test(domain)) {
+                    lock = lock < 0 ? 1 : lock + 1;
+
+                    $.getJSON('http://api.' + domain + '/1.1/questions/' + ids[domain].join(';') + '?jsonp=?',
+                        (function (d) {
+                            var domain = d;
+
+                            return function (data) {
+                                callback(data, domain);
+                            };
+                        })(domain));
+                }
+            }
+        }
+    }
+
+    $(document).ready(function () {
+        $('textarea[name="comment"]:not(.link-hijacked)').live('focus', function () {
+            new HijackedTextarea($(this));
+        });
+    });
 });
