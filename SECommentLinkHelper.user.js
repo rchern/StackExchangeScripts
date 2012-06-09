@@ -42,7 +42,7 @@ inject(function ($) {
             lock = 0,
             submitComment = form.data('events').submit[0].handler,
             validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
-            miniLink = /(^|\s)(\[(?:[^\]]+)\]\(?:(?:(?:https?|ftp):\/\/[^)\s]+?)(?:\s(?:"|&quot;)(?:[^"]+?)(?:"|&quot;))?\))/g,
+            miniLink = /(^|\s)(\[([^\]]+)\]\((?:(?:https?|ftp):\/\/[^)\s]+?)(?:\s(?:"|&quot;)(?:[^"]+?)(?:"|&quot;))?\))/g,
             miniCode = /(^|\W)(`(?:.+?)`)(?=\W|$)/g,
             results = [];
 
@@ -101,6 +101,8 @@ inject(function ($) {
                 swapper = function (s, m1, m2) {
                     swaps.push(m2);
                     
+                    console.log(m2);
+                    
                     return m1 + "~%" + (swaps.length - 1) + "#";
                 },
                 comment = textarea.value;
@@ -123,7 +125,7 @@ inject(function ($) {
                     }
                 }
 
-                textarea.value = comment.replace(/~%(\d+)#/, function (s, m1) {
+                textarea.value = comment.replace(/~%(\d+)#/g, function (s, m1) {
                     return swaps[+m1];
                 });
                 $(textarea).trigger('keyup');
