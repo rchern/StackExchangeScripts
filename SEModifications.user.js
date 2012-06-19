@@ -93,23 +93,28 @@ with_jquery(function ($) {
 		$(".post-menu").each(function() {
 			var self = $(this),
 				postLink = question,
-				id = self.find("a:contains('link')")[0].href.replace(/^.*\/a\//, "").replace(/\/\d+(?:#.*)?$/, "");;
-
+				id = self.find("a:contains('link')")[0].href.replace(/\/\d+(?:#.*)?$/, "").replace(/^.*\//, "");
+				
 			if (!revisions) {
 				revisions = "/posts/" + id + "/revisions";
 				postLink = postLink + '/' + id;
 			}
-
-			self.append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>")
-				.find('a').each(function () {
-					var self = $(this), text = self.text();
+			
+			var isEdited = $('a[href$="' + revisions + '"]:last');
+			
+			if ((isEdited.attr("title") != "show all edits to this post")){
+				self.append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>")
+					.find('a').each(function () {
+						var self = $(this), text = self.text();
 					
-					if (text.indexOf(' ') !== -1) {
-						self.text(text.replace(' ', '\u00a0'));
-					}
-				});
-
+						if (text.indexOf(' ') !== -1) {
+							self.text(text.replace(' ', '\u00a0'));
+						}
+						
+					});
+			}
 			revisions = null;
+			
 		});
 	}
 	
