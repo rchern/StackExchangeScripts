@@ -83,7 +83,6 @@ with_jquery(function ($) {
 
 		var post = question.replace("questions", "posts").replace(/\/[^\/]*$/, ""),
 			timeline = post + "/timeline",
-			revisions = post + "/revisions",
 			questionPost = $('#question'),
 			ownedByMe = $('.post-signature', questionPost).length == 2 && $('.post-signature.owner .user-details a:first').attr('href') === My.profile;
 		$(".post-menu", questionPost).append(
@@ -94,8 +93,7 @@ with_jquery(function ($) {
 			var self = $(this),
 				id = self.find("a:contains('link')")[0].href.replace(/^\D*/, "").replace(/\/\d*/, ""),
 				revisions = "/posts/" + id + "/revisions",
-				postLink = question + '/' + id,
-			    isEdited = $('a[href$="' + revisions + '"]:last');
+			        isEdited = $('a[href$="' + revisions + '"]:last');
 			
 			if ((isEdited.attr("title") != "show all edits to this post")){
 				self.append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>")
