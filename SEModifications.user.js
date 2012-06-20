@@ -92,15 +92,10 @@ with_jquery(function ($) {
 		);
 		$(".post-menu").each(function() {
 			var self = $(this),
-				postLink = question,
-				id = self.find("a:contains('link')")[0].href.replace(/\/\d+(?:#.*)?$/, "").replace(/^.*\//, "");
-				
-			if (!revisions) {
-				revisions = "/posts/" + id + "/revisions";
-				postLink = postLink + '/' + id;
-			}
-			
-			var isEdited = $('a[href$="' + revisions + '"]:last');
+				id = self.find("a:contains('link')")[0].href.replace(/^\D*/, "").replace(/\/\d*/, ""),
+				revisions = "/posts/" + id + "/revisions",
+				postLink = question + '/' + id,
+			    isEdited = $('a[href$="' + revisions + '"]:last');
 			
 			if ((isEdited.attr("title") != "show all edits to this post")){
 				self.append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>")
@@ -113,7 +108,6 @@ with_jquery(function ($) {
 						
 					});
 			}
-			revisions = null;
 			
 		});
 	}
