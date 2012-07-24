@@ -93,7 +93,7 @@ with_jquery(function ($) {
 		$(".post-menu").each(function() {
 			var self = $(this),
 				postLink = question,
-				id = self.find("a:contains('link')")[0].href.replace(/^.*\/a\//, "").replace(/\/\d+(?:#.*)?$/, "");;
+				id = self.find("a.short-link")[0].href.replace(/^.*\/a\//, "").replace(/\/\d+(?:#.*)?$/, "");;
 
 			if (!revisions) {
 				revisions = "/posts/" + id + "/revisions";
