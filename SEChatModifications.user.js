@@ -600,7 +600,7 @@ inject(livequery, bindas, expressions, function ($) {
 		if (isNumber(first)) {
 			validate('number');
 
-			insert = 'http://' + window.location.hostnmae + '/transcript/message/' + first;
+			insert = 'http://' + window.location.host + '/transcript/message/' + first;
 			var content = $(Selectors.getMessage(first));
 
 			if (content.length !== 1)
