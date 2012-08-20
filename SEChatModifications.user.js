@@ -594,10 +594,14 @@ inject(livequery, bindas, expressions, function ($) {
 	// Define the snippet jotting command
 	ChatExtension.define('jot', function () {
 		var first = arguments[0],
+			second = arguments[1],
 			room = $('#roomname').text(),
 			insert, display;
 
-		if (isNumber(first)) {
+		if (isNumber(first) && second === '|') {
+			insert = 'http://' + window.location.host + '/transcript/message/' + first;
+			display = $.makeArray(arguments).slice(2).join(' ');
+		} else if (isNumber(first)) {
 			validate('number');
 
 			insert = 'http://' + window.location.hostnmae + '/transcript/message/' + first;
