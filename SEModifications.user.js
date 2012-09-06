@@ -105,7 +105,7 @@ with_jquery(function ($) {
 					var self = $(this), text = self.text();
 					
 					if (text.indexOf(' ') !== -1) {
-						self.text(text.replace(' ', '\u00a0'));
+						self.text(text.replace(/ +/g, '\u00a0'));
 					}
 				});
 
