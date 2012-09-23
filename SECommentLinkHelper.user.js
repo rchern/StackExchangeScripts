@@ -36,7 +36,8 @@ function inject() {
 
 inject(function ($) {
     function HijackedTextarea(t) {
-        var textarea = t.addClass('link-hijacked')[0],
+        var filter = '-ox0X.YDyJfh',
+            textarea = t.addClass('link-hijacked')[0],
             form = t.closest('form'),
             link = new RegExp('(?:^|[^\\(])http://([^\\s/]+)/q(?:uestions)?/([0-9]+)', 'ig'),
             lock = 0,
@@ -79,7 +80,7 @@ inject(function ($) {
         function callback(data, domain) {
             lock = lock - 1 === 0 ? -1 : lock - 1;
 
-            if (!data.questions || !data.questions.length) {
+            if (!data.items || !data.items.length) {
                 if (lock < 0) {
                     submit();
                 }
@@ -111,15 +112,15 @@ inject(function ($) {
                 comment = comment.replace(miniLink, swapper).replace(miniCode, swapper);
             
                 for (i = 0; i < results.length; ++i) {
-                    for (j = 0; j < results[i].questions.length; ++j) {
-                        pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].questions[j].question_id + '(?:/[^\\s/]*)?(/[0-9]+)?(#[^\\s]+)?';
+                    for (j = 0; j < results[i].items.length; ++j) {
+                        pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].items[j].question_id + '(?:/[^\\s/]*)?(/[0-9]+)?(#[^\\s]+)?';
                         comment = comment.replace(new RegExp(pattern, 'i'), function (s, leading, question, trailing, anchor) {
                             leading = leading || '';
                             trailing = trailing || '';
                             anchor = anchor || '';
 
-                            return leading + '[' + results[i].questions[j].title + '](http://' + results[i].domain + '/' +
-                                (question === 'questions' && trailing === '' ? 'q' : question) + '/' + results[i].questions[j].question_id +
+                            return leading + '[' + results[i].items[j].title.replace(']', '\]') + '](http://' + results[i].domain + '/' +
+                                (question === 'questions' && trailing === '' ? 'q' : question) + '/' + results[i].items[j].question_id +
                                 (question === 'q' ? '' : trailing) + anchor + ')';
                         });
                     }
@@ -142,7 +143,7 @@ inject(function ($) {
                 if (validSites.test(domain)) {
                     lock = lock < 0 ? 1 : lock + 1;
 
-                    $.getJSON('http://api.' + domain + '/1.1/questions/' + ids[domain].join(';') + '?jsonp=?',
+                    $.get('http://api.stackexchange.com/2.1/questions/' + ids[domain].join(';') + '?site=' + toSite(domain) + '&filter=' + filter,
                         (function (d) {
                             var domain = d;
 
@@ -152,6 +153,10 @@ inject(function ($) {
                         })(domain));
                 }
             }
+        }
+        
+        function toSite(domain) {
+            return domain.substring(0, domain.indexOf('.'));
         }
     }
 
