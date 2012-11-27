@@ -148,6 +148,11 @@ inject(function ($) {
                             var domain = d;
 
                             return function (data) {
+                                // Go home Firefox you are drunk
+                                if (typeof(data) === 'string') {
+                                    data = JSON.parse(data);
+                                }
+                            
                                 callback(data, domain);
                             };
                         })(domain));
