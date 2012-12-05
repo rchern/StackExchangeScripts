@@ -113,15 +113,23 @@ inject(function ($) {
             
                 for (i = 0; i < results.length; ++i) {
                     for (j = 0; j < results[i].items.length; ++j) {
-                        pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].items[j].question_id + '(?:/[-\\w]*)?(/[0-9]+)?(#[^\\s]+)?';
-                        comment = comment.replace(new RegExp(pattern, 'i'), function (s, leading, question, trailing, anchor) {
+                        pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].items[j].question_id + '(?:/[-\\w]*)?(/[0-9]+)?(?:\\?[a-z]+=1)?(#\\w+)?';
+                        comment = comment.replace(new RegExp(pattern, 'gi'), function (s, leading, question, trailing, anchor) {
                             leading = leading || '';
                             trailing = trailing || '';
                             anchor = anchor || '';
-
-                            return leading + '[' + results[i].items[j].title.replace(']', '\]') + '](http://' + results[i].domain + '/' +
-                                (question === 'questions' && trailing === '' ? 'q' : question) + '/' + results[i].items[j].question_id +
-                                (question === 'q' ? '' : trailing) + anchor + ')';
+                            
+                            var url, comment = /^#comment(\d+)_/.exec(anchor);
+                            
+                            if (comment) {
+                                url = '/posts/comments/' + comment[1];
+                            } else if (question === 'questions' && trailing) {
+                                url = '/a' + trailing;
+                            } else {
+                                url = '/q/' + results[i].items[j].question_id;
+                            }
+                            
+                            return leading + '[' + results[i].items[j].title.replace(']', '\]') + '](http://' + results[i].domain + url + ')';
                         });
                     }
                 }
