@@ -113,7 +113,7 @@ inject(function ($) {
             
                 for (i = 0; i < results.length; ++i) {
                     for (j = 0; j < results[i].items.length; ++j) {
-                        pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].items[j].question_id + '(?:/[^\\s/]*)?(/[0-9]+)?(#[^\\s]+)?';
+                        pattern = '(^|[^\\(])http://' + results[i].domain + '/(q(?:uestions)?)/' + results[i].items[j].question_id + '(?:/[-\\w]*)?(/[0-9]+)?(#[^\\s]+)?';
                         comment = comment.replace(new RegExp(pattern, 'i'), function (s, leading, question, trailing, anchor) {
                             leading = leading || '';
                             trailing = trailing || '';
