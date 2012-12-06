@@ -102,8 +102,6 @@ inject(function ($) {
                 swapper = function (s, m1, m2) {
                     swaps.push(m2);
                     
-                    console.log(m2);
-                    
                     return m1 + "~%" + (swaps.length - 1) + "#";
                 },
                 comment = textarea.value;
