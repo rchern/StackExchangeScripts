@@ -60,7 +60,7 @@ inject(function ($) {
 
             while (url = link.exec(comment)) {
                 if (!ids[url[1]])
-                    ids[url[1]] = []
+                    ids[url[1]] = [];
 
                 ids[url[1]].push(url[2]);
 
@@ -149,7 +149,7 @@ inject(function ($) {
                 if (validSites.test(domain)) {
                     lock = lock < 0 ? 1 : lock + 1;
 
-                    $.get('http://api.stackexchange.com/2.1/questions/' + ids[domain].join(';') + '?site=' + toSite(domain) + '&filter=' + filter,
+                    $.get('http://api.stackexchange.com/2.1/questions/' + ids[domain].join(';') + '?site=' + domain + '&filter=' + filter,
                         (function (d) {
                             var domain = d;
 
@@ -164,10 +164,6 @@ inject(function ($) {
                         })(domain));
                 }
             }
-        }
-        
-        function toSite(domain) {
-            return domain.substring(0, domain.indexOf('.'));
         }
     }
 
