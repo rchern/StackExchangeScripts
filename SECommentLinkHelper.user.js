@@ -39,7 +39,7 @@ inject(function ($) {
         var filter = '-ox0X.YDyJfh',
             textarea = t.addClass('link-hijacked')[0],
             form = t.closest('form'),
-            link = new RegExp('(?:^|\\W)http://([^\\s/]+)/q(?:uestions)?/([0-9]+)', 'ig'),
+            link = new RegExp('(?:^|[^\\w\\\\])http://([^\\s/]+)/q(?:uestions)?/([0-9]+)', 'ig'),
             lock = 0,
             submitComment = form.data('events').submit[0].handler,
             validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
@@ -111,7 +111,7 @@ inject(function ($) {
             
                 for (i = 0; i < results.length; ++i) {
                     for (j = 0; j < results[i].items.length; ++j) {
-                        pattern = '(^|\\W)http://' + results[i].domain.replace('.', '\\.') + '/(q(?:uestions)?)/' + results[i].items[j].question_id + '(?:/[-\\w]*)?(/[0-9]+)?(?:\\?[a-z]+=1)?(#\\w+)?';
+                        pattern = '(^|[^\\w\\\\])http://' + results[i].domain.replace('.', '\\.') + '/(q(?:uestions)?)/' + results[i].items[j].question_id + '(?:/[-\\w]*)?(/[0-9]+)?(?:\\?[a-z]+=1)?(#\\w+)?';
                         comment = comment.replace(new RegExp(pattern, 'gi'), function (s, leading, question, trailing, anchor) {
                             leading = leading || '';
                             trailing = trailing || '';
