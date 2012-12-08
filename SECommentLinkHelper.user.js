@@ -127,7 +127,7 @@ inject(function ($) {
                                 url = '/q/' + results[i].items[j].question_id;
                             }
                             
-                            return leading + '[' + results[i].items[j].title.replace(']', '\]') + '](http://' + results[i].domain + url + ')';
+                            return leading + '[' + escapeMarkdown(results[i].items[j].title) + '](http://' + results[i].domain + url + ')';
                         });
                     }
                 }
@@ -142,6 +142,14 @@ inject(function ($) {
 
             results = [];
             lock = 0;
+        }
+        
+        function escapeMarkdown(text) {
+            return text.replace(/\[/g, '\\[')
+                       .replace(/\]/g, '\\]')
+                       .replace(/\*/g, '\\*')
+                       .replace(/_/g, '\\_')
+                       .replace(/`/g, '\\`');
         }
 
         function request(ids, callback) {
