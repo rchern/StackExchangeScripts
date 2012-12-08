@@ -36,10 +36,10 @@ function inject() {
 
 inject(function ($) {
     function HijackedTextarea(t) {
-        var filter = '-ox0X.YDyJfh',
+        var filters = { questions: '-ox0X.YDyJfh', answers: '!b6vl_mZrb8iVXs' },
             textarea = t.addClass('link-hijacked')[0],
             form = t.closest('form'),
-            link = new RegExp('(?:^|[^\\w\\\\])http://([^\\s/]+)/q(?:uestions)?/([0-9]+)', 'ig'),
+            link = new RegExp('(?:^|[^\\w\\\\])http://([^\\s/]+)/(q(?:uestions)?|a)/([0-9]+)', 'ig'),
             lock = 0,
             submitComment = form.data('events').submit[0].handler,
             validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
@@ -55,22 +55,25 @@ inject(function ($) {
 
             lock = -1;
 
-            var url, ids = {}, count = 0,
+            var url, questions = {}, answers = {},
                 comment = textarea.value.replace(miniLink, "$1##").replace(miniCode, "$1##");
 
             while (url = link.exec(comment)) {
-                if (!ids[url[1]])
-                    ids[url[1]] = [];
+                var type = url[2] === 'a' ? answers : questions,
+                    domain = url[1];
+            
+                if (!type[domain])
+                    type[domain] = [];
 
-                ids[url[1]].push(url[2]);
-
-                ++count;
+                type[domain].push(url[3]);
             }
 
-            if (count)
-                request(ids, callback);
-            else
+            if (Object.keys(questions).length || Object.keys(answers).length) {
+                request(questions, 'questions', callback);
+                request(answers, 'answers', callback);
+            } else {
                 submit.call(form.eq(0));
+            }
 
             link.lastIndex = 0;
 
@@ -98,7 +101,7 @@ inject(function ($) {
         }
 
         function submit() {
-            var i, j, pattern, swaps = [],
+            var i, j, id, post, pattern, swaps = [],
                 swapper = function (s, m1, m2) {
                     swaps.push(m2);
                     
@@ -107,27 +110,31 @@ inject(function ($) {
                 comment = textarea.value;
 
             if (results.length) {
-                comment = comment.replace(miniLink, swapper).replace(miniCode, swapper);
-            
                 for (i = 0; i < results.length; ++i) {
+                    comment = comment.replace(miniLink, swapper).replace(miniCode, swapper);
+                
                     for (j = 0; j < results[i].items.length; ++j) {
-                        pattern = '(^|[^\\w\\\\])http://' + results[i].domain.replace('.', '\\.') + '/(q(?:uestions)?)/' + results[i].items[j].question_id + '(?:/[-\\w]*)?(/[0-9]+)?(?:\\?[a-z]+=1)?(#\\w+)?';
-                        comment = comment.replace(new RegExp(pattern, 'gi'), function (s, leading, question, trailing, anchor) {
+                        post = results[i].items[j];
+                        id = post.question_id || post.answer_id;
+                        pattern = '(^|[^\\w\\\\])http://' + results[i].domain.replace('.', '\\.') + '/(q(?:uestions)?|a)/' + id + '(?:/[-\\w]*)?(/[0-9]+)?(?:\\?[a-z]+=1)?(#\\w+)?';
+                        comment = comment.replace(new RegExp(pattern, 'gi'), function (s, leading, type, trailing, anchor) {
                             leading = leading || '';
                             trailing = trailing || '';
-                            anchor = anchor || '';
+                            anchor = /^#comment(\d+)_/.exec(anchor || '');
                             
-                            var url, comment = /^#comment(\d+)_/.exec(anchor);
+                            var url;
                             
-                            if (comment) {
-                                url = '/posts/comments/' + comment[1];
-                            } else if (question === 'questions' && trailing) {
+                            if (anchor) {
+                                url = '/posts/comments/' + anchor[1];
+                            } else if (type === 'questions' && trailing) {
                                 url = '/a' + trailing;
+                            } else if (type === 'a') {
+                                url = '/a/' + id;
                             } else {
-                                url = '/q/' + results[i].items[j].question_id;
+                                url = '/q/' + id;
                             }
                             
-                            return leading + '[' + escapeMarkdown(results[i].items[j].title) + '](http://' + results[i].domain + url + ')';
+                            return leading + '[' + escapeMarkdown(post.title) + '](http://' + results[i].domain + url + ')';
                         });
                     }
                 }
@@ -152,26 +159,23 @@ inject(function ($) {
                        .replace(/`/g, '\\`');
         }
 
-        function request(ids, callback) {
-            for (var domain in ids) {
+        function request(ids, type, callback) {
+            Object.keys(ids).forEach(function (domain) {
                 if (validSites.test(domain)) {
                     lock = lock < 0 ? 1 : lock + 1;
 
-                    $.get('http://api.stackexchange.com/2.1/questions/' + ids[domain].join(';') + '?site=' + domain + '&filter=' + filter,
-                        (function (d) {
-                            var domain = d;
-
-                            return function (data) {
-                                // Go home Firefox you are drunk
-                                if (typeof(data) === 'string') {
-                                    data = JSON.parse(data);
-                                }
-                            
-                                callback(data, domain);
-                            };
-                        })(domain));
+                    $.get('http://api.stackexchange.com/2.1/' + type + '/' + ids[domain].join(';') + '?site=' + domain + '&filter=' + filters[type],
+                        function (data) {
+                            // Go home Firefox you are drunk
+                            if (typeof(data) === 'string') {
+                                data = JSON.parse(data);
+                            }
+                        
+                            callback(data, domain);
+                        }
+                    );                
                 }
-            }
+            });
         }
     }
 
