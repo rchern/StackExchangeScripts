@@ -366,6 +366,38 @@ inject(livequery, bindas, expressions, function ($) {
                     ChatExtension.execute('jot', [self.id.substring(8)]);
                 });
         });
+        
+        // Hijack image uploader so we can preserve a leading :id
+        Object.defineProperty(window, 'closeDialog', (function () {
+            var original, reply = /^(:\d+)?\s*$/;
+            
+            function transform(url) {
+                if (!original) {
+                    return;
+                }
+                
+                if (!url) {
+                    return original();
+                }
+                
+                var text = input.val();
+                
+                if ((text = reply.exec(text)) && !reply.test(url)) {
+                    url = text[1] + ' ' + url;
+                }
+                
+                original(url);
+            }
+            
+            return {
+                set: function (value) {
+                    original = value;
+                },
+                get: function () {
+                    return transform;
+                }
+            }
+        })());
     });
 
     // Define the snippet list command
