@@ -382,7 +382,7 @@ inject(livequery, bindas, expressions, function ($) {
                 
                 var text = input.val();
                 
-                if ((text = reply.exec(text)) && !reply.test(url)) {
+                if ((text = reply.exec(text)) && text[1] && !reply.test(url)) {
                     url = text[1] + ' ' + url;
                 }
                 
