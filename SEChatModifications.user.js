@@ -369,7 +369,7 @@ inject(livequery, bindas, expressions, function ($) {
         
         // Hijack image uploader so we can preserve a leading :id
         Object.defineProperty(window, 'closeDialog', (function () {
-            var original, reply = /^(:\d+)?\s*$/;
+            var original;
             
             function transform(url) {
                 if (!original) {
@@ -382,7 +382,7 @@ inject(livequery, bindas, expressions, function ($) {
                 
                 var text = input.val();
                 
-                if ((text = reply.exec(text)) && text[1] && !reply.test(url)) {
+                if ((text = /^(:\d+)\s*$/.exec(text)) && !/^:\d+\s*/.test(url)) {
                     url = text[1] + ' ' + url;
                 }
                 
