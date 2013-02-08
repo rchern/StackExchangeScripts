@@ -51,6 +51,7 @@
 	}
 	
 	function spaces (n) {
+		if (n < 0) return '';
 		return new Array(n + 1).join(' ');
 	}
 	
@@ -95,13 +96,12 @@
 		
 		if(chunks.length > 3) {
 			if(inObject(chunks[1], voteTypesComplex)) {
-				console.log((/^[([](-?\d+)[)\]]$/).exec(chunks[3]), chunks[3]);
 				chunks.push(voteTypesComplex[chunks[1]][(/^[([](-?\d+)[)\]]$/).exec(chunks[3])[1]]);
 			} else if(inObject(chunks[1], voteTypeSimple)) {
 				chunks.push(voteTypeSimple[chunks[1]]);
 			}
 			
-			if(!isNaN(chunks[1])) {
+			if(!isNaN(chunks[1]) && chunks[0] !== 'earned') {
 				lines[i] = spaces(1) + chunks[1] + spaces(2) + chunks[2] + spaces(10 - chunks[2].length - chunks[1].length) + chunks[3] + spaces(maxLen - lines[i].length + 3) + chunks[4];
 			}
 		}
