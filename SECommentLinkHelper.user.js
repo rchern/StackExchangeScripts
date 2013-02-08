@@ -39,6 +39,7 @@ inject(function ($) {
         var filters = { questions: '-ox0X.YDyJfh', answers: '!b6vl_mZrb8iVXs' },
             textarea = t.addClass('link-hijacked')[0],
             form = t.closest('form'),
+            span = document.createElement('span'),
             link = new RegExp('(?:^|[^\\w\\\\])http://([^\\s/]+)/(q(?:uestions)?|a)/([0-9]+)', 'ig'),
             lock = 0,
             submitComment = form.data('events').submit[0].handler,
@@ -134,7 +135,7 @@ inject(function ($) {
                                 url = '/q/' + id;
                             }
                             
-                            return leading + '[' + escapeMarkdown(post.title) + '](http://' + results[i].domain + url + ')';
+                            return leading + '[' + escapeMarkdown(toText(post.title)) + '](http://' + results[i].domain + url + ')';
                         });
                     }
                 }
@@ -149,6 +150,12 @@ inject(function ($) {
 
             results = [];
             lock = 0;
+        }
+        
+        function toText(html) {
+            span.innerHTML = html;
+            
+            return span.textContent;
         }
         
         function escapeMarkdown(text) {
@@ -179,9 +186,7 @@ inject(function ($) {
         }
     }
 
-    $(document).ready(function () {
-        $('textarea[name="comment"]:not(.link-hijacked)').live('focus', function () {
-            new HijackedTextarea($(this));
-        });
+    $('textarea[name="comment"]:not(.link-hijacked)').live('focus', function () {
+        new HijackedTextarea($(this));
     });
 });
