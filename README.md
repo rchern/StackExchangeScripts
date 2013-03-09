@@ -87,6 +87,8 @@ The clipboard is a place to store messages and notes to yourself.
 	* If `[match]` is a number, than the message with that id is taken 
 	  down into the clipboard, else everything else after `/jot` is 
 	  stored into the clipboard as a note.
+  * To take transcript message to the clipboard simply use
+    `/jot [id]|Description` format.
 	* After jotting down things into the clipboard, an id will be shown.
 	  This id will be used to refer to the note when pasting or 
 	  removing the message from the clipboard.
@@ -111,6 +113,7 @@ The clipboard is a place to store messages and notes to yourself.
     * <kbd>F</kbd> puts the command to flag a message in the input box
     * <kbd>J</kbd> jumps to the replied-to message, if the selected message is 
       an explicit reply
+    * <kbd>C</kbd> jots the selected message
     * <kbd>Right Arrow</kbd> edits or begins a reply to the selected message, 
       depending on if you own it
     * <kbd>Left Arrow</kbd> and <kbd>P</kbd> display the replied-to message, if the 
