@@ -981,6 +981,9 @@ inject(livequery, bindas, expressions, function ($) {
                         return target.closest('.monologue').hasClass('mine') ? 'edit' : 'reply';
                     }
                 },
+                '67': {
+                    'command': 'jot'
+                },
                 '68': {
                     'command': 'del',
                 },
