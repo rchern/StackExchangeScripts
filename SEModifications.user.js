@@ -105,10 +105,12 @@ inject(function ($) {
 
             self.append("<span class='lsep'>|</span><a href='" + revisions + "'>history</a>")
                 .find('a').each(function () {
-                    var self = $(this), text = self.text();
+                    var nodes = this.childNodes, i;
                     
-                    if (text.indexOf(' ') !== -1) {
-                        self.text(text.replace(/ +/g, '\u00a0'));
+                    for (i = 0; i < nodes.length; ++i) {
+                        if (nodes[i].nodeType == Node.TEXT_NODE) {
+                            nodes[i].nodeValue = nodes[i].nodeValue.replace(/ +/g, '\u00a0');
+                        }
                     }
                 });
 
