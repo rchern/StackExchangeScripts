@@ -171,7 +171,7 @@ inject(function ($) {
                 if (validSites.test(domain)) {
                     lock = lock < 0 ? 1 : lock + 1;
 
-                    $.get('http://api.stackexchange.com/2.1/' + type + '/' + ids[domain].join(';') + '?site=' + domain + '&filter=' + filters[type],
+                    $.get('http://api.stackexchange.com/2.1/' + type + '/' + ids[domain].join(';') + '?site=' + domain + '&filter=' + filters[type] + '&key=p0r10MZ01l1H4So8wqT*qA((',
                         function (data) {
                             // Go home Firefox you are drunk
                             if (typeof(data) === 'string') {
