@@ -1,23 +1,21 @@
 // ==UserScript==
 // @name          SE Comment Link Helper
 // @description   A hook to transform raw links to properly titled links in comments
-// @include       http://stackoverflow.com/*
-// @include       http://meta.stackoverflow.com/*
-// @include       http://superuser.com/*
-// @include       http://meta.superuser.com/*
-// @include       http://serverfault.com/*
-// @include       http://meta.serverfault.com/*
-// @include       http://askubuntu.com/*
-// @include       http://meta.askubuntu.com/*
-// @include       http://answers.onstartups.com/*
-// @include       http://meta.answers.onstartups.com/*
-// @include       http://stackapps.com/*
-// @include       http://*.stackexchange.com/*
-// @exclude       http://chat.stackexchange.com/*
-// @exclude       http://chat.*.stackexchange.com/*
-// @exclude       http://api.*.stackexchange.com/*
-// @exclude       http://data.stackexchange.com/*
-// @exclude       http://*/reputation
+// @match         *://stackoverflow.com/*
+// @match         *://meta.stackoverflow.com/*
+// @match         *://superuser.com/*
+// @match         *://meta.superuser.com/*
+// @match         *://serverfault.com/*
+// @match         *://meta.serverfault.com/*
+// @match         *://askubuntu.com/*
+// @match         *://meta.askubuntu.com/*
+// @match         *://stackapps.com/*
+// @match         *://*.stackexchange.com/*
+// @exclude       *://chat.stackexchange.com/*
+// @exclude       *://chat.*.stackexchange.com/*
+// @exclude       *://api.*.stackexchange.com/*
+// @exclude       *://data.stackexchange.com/*
+// @exclude       *://*/reputation
 // @author        @TimStone
 // ==/UserScript==
 
@@ -40,7 +38,7 @@ inject(function ($) {
             textarea = t.addClass('link-hijacked')[0],
             form = t.closest('form'),
             span = document.createElement('span'),
-            link = new RegExp('(?:^|[^\\w\\\\])http://([^\\s/]+)/(q(?:uestions)?|a)/([0-9]+)', 'ig'),
+            link = new RegExp('(?:^|[^\\w\\\\])https?://([^\\s/]+)/(q(?:uestions)?|a)/([0-9]+)', 'ig'),
             lock = 0,
             submitComment = form.data('events').submit[0].handler,
             validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
@@ -117,8 +115,8 @@ inject(function ($) {
                     for (j = 0; j < results[i].items.length; ++j) {
                         post = results[i].items[j];
                         id = post.question_id || post.answer_id;
-                        pattern = '(^|[^\\w\\\\])http://' + results[i].domain.replace('.', '\\.') + '/(q(?:uestions)?|a)/' + id + '(?:/[-\\w]*)?(/[0-9]+)?(?:\\?[a-z]+=1)?(#\\w+)?';
-                        comment = comment.replace(new RegExp(pattern, 'gi'), function (s, leading, type, trailing, anchor) {
+                        pattern = '(^|[^\\w\\\\])http(s?)://' + results[i].domain.replace('.', '\\.') + '/(q(?:uestions)?|a)/' + id + '(?:/[-\\w]*)?(/[0-9]+)?(?:\\?[a-z]+=1)?(#\\w+)?';
+                        comment = comment.replace(new RegExp(pattern, 'gi'), function (s, leading, https, type, trailing, anchor) {
                             leading = leading || '';
                             trailing = trailing || '';
                             anchor = /^#comment(\d+)_/.exec(anchor || '');
@@ -135,7 +133,7 @@ inject(function ($) {
                                 url = '/q/' + id;
                             }
                             
-                            return leading + '[' + escapeMarkdown(toText(post.title)) + '](http://' + results[i].domain + url + ')';
+                            return leading + '[' + escapeMarkdown(toText(post.title)) + '](http' + https + '://' + results[i].domain + url + ')';
                         });
                     }
                 }
@@ -171,7 +169,7 @@ inject(function ($) {
                 if (validSites.test(domain)) {
                     lock = lock < 0 ? 1 : lock + 1;
 
-                    $.get('http://api.stackexchange.com/2.1/' + type + '/' + ids[domain].join(';') + '?site=' + domain + '&filter=' + filters[type] + '&key=p0r10MZ01l1H4So8wqT*qA((',
+                    $.get(window.location.protocol + '//api.stackexchange.com/2.1/' + type + '/' + ids[domain].join(';') + '?site=' + domain + '&filter=' + filters[type] + '&key=p0r10MZ01l1H4So8wqT*qA((',
                         function (data) {
                             // Go home Firefox you are drunk
                             if (typeof(data) === 'string') {
@@ -186,7 +184,7 @@ inject(function ($) {
         }
     }
 
-    $('textarea[name="comment"]:not(.link-hijacked)').live('focus', function () {
+    $(document).on('focus', 'textarea[name="comment"]:not(.link-hijacked)', function () {
         new HijackedTextarea($(this));
     });
 });
