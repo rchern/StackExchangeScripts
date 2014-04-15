@@ -1115,7 +1115,7 @@ inject(livequery, bindas, expressions, function ($) {
                         sibling = selected[action + 'All']('.message:first');
 
                     if (!sibling.length)
-                        sibling = selected.closest('.monologue')[action + 'All']('.monologue:first').find('.message:' + select);
+                        sibling = selected.closest('.monologue')[action + 'All']('.monologue:visible:first').find('.message:' + select);
 
                     if (sibling.length) {
                         selected.removeClass('easy-navigation-selected');
