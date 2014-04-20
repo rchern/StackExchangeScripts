@@ -1381,7 +1381,7 @@ inject(livequery, bindas, expressions, function ($) {
                 break;
             case 'm':
                 if (rest == 'so' || 'eta')
-                    result = 'meta.stackoverflow.com';
+                    result = 'meta.stackexchange.com';
                 break;
             case 'n':
             case 'w':
