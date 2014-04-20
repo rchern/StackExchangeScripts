@@ -2,7 +2,7 @@
 // @name          SE Comment Link Helper
 // @description   A hook to transform raw links to properly titled links in comments
 // @match         *://stackoverflow.com/*
-// @match         *://meta.stackoverflow.com/*
+// @match         *://meta.stackexchange.com/*
 // @match         *://superuser.com/*
 // @match         *://meta.superuser.com/*
 // @match         *://serverfault.com/*

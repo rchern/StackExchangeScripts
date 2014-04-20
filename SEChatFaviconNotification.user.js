@@ -3,11 +3,11 @@
 // @namespace      yijiang
 // @description    Watches the SO Chat for new messages, and changes the Favicon accordingly
 // @include        http://chat.stackoverflow.com/rooms/*
-// @include        http://chat.meta.stackoverflow.com/rooms/*
+// @include        http://chat.meta.stackexchange.com/rooms/*
 // @include        http://chat.stackexchange.com/rooms/*
 // @include        http://chat.askubuntu.com/rooms/*
 // @exclude        http://chat.stackoverflow.com/rooms/info/*
-// @exclude        http://chat.meta.stackoverflow.com/rooms/info/*
+// @exclude        http://chat.meta.stackexchange.com/rooms/info/*
 // @exclude        http://chat.stackexchange.com/rooms/info*
 // @exclude        http://chat.askubuntu.com/rooms/info/*
 // ==/UserScript==
@@ -48,7 +48,7 @@
 	// Find the correct favicon to use
 	if(host.indexOf('chat.stackoverflow') === 0) {
 		img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABnElEQVQ4jWNgwAMaGBiYHqdqT36SpvP/carOgdueKuz41OM2JE177ZM0nf+PUrUXkmwAAwMDw91QJf7HKTqnn6Tp/H+UplNNUMOrqaw5r6ew1D2fxCAKE3uYpKv0OEX3KdQlETg1P+5j4Hw9he3q66ls/19NZX35agpLzcsJDOIMDAwMj5O1zR6n6P54nKb942GqpgtWAxoaGJheTWVQeTeNqe31VJbPUINev5rB0ny/gUHgSbaqz5Mk/T+Pk3UbCXrlQT+D5NupTE3vpjG9fTOV9f+racxvXvZzND0tk/JrYGBgwtCwqtCSc3WFQ/GqEqfAZYWO2vMTFDgYGBgYrjaI8jybyFn0bhrTo3fTmf6/mc4gjdXGVcW2WmsrHP/D8OpypzcrS10OrC53bN1QaRVypFkj6FaPSCROJ88sd+FfV2YdtKHCrmV9he3ODeW29zZU2P1fX2H/f2254//VZU7/VxY72WFozM3J+Z+bk/Mfq6HFviJzy31tFld4payscJ44s8BdEkM9sgCMjQtjtZCqBhADcBpAKqaKAQB1iiloT36niAAAAABJRU5ErkJggg==';
-	} else if(host.indexOf('chat.meta.stackoverflow') === 0) {
+	} else if(host.indexOf('chat.meta.stackexchange') === 0) {
 		img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABWklEQVQ4ja2QvUpDQRCFLykkhYhFkGApVj6AlVhZikiw8AEsbxpDGiPu2Znd2CQEkXAJ3DuzeQAfwNLa2tpCLERSWaWQtUlAMNcfcODAsMz55uwkyTcFoOKcu/beR+fcHYCl7+ZLId77G+99ZObxnwEzyIpz7n6W5OxHg4ikInIxGo1qnyAbzPzsvY9EdFxqVtWqiDyoalTVFxE5z7JsLUmSxDm3zcxT59yUmffK4lbyPN9U1UsReVPVKCKvIQQeDAar3W53n4jeicj++JXhcFgPIbCqTmaJJnmec7/fPwBQWbS9CuAUwCGALQDVGWi5KIrT8Xj8FEKIRVGsl8XfstbGuYwxE2PMnTHGM/NRr9drZFlWfsBms7kCoAHAE9GttfaRiCIRRWttBBAB7H4xpmka0zSNi6CtVqvW6XR2AJwAuGq32/Uv858f5n2ZFi78V8BvqhTwV/0L4AMhxDwD8Y9esAAAAABJRU5ErkJggg==';
 	} else {
 		var smallIconUrl = document.querySelectorAll('#sidebar-menu .small-site-logo')[0].src,

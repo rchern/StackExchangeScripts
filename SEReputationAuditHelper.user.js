@@ -2,7 +2,7 @@
 // @name           Stack Exchange Reputation Audit Helper
 // @namespace      yijiang
 // @include        http://stackoverflow.com/reputation
-// @include        http://meta.stackoverflow.com/reputation
+// @include        http://meta.stackexchange.com/reputation
 // @include        http://superuser.com/reputation
 // @include        http://serverfault.com/reputation
 // @include        http://askubuntu.com/reputation

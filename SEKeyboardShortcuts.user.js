@@ -2,7 +2,7 @@
 // @name		SE Keyboard Navigation
 // @description	VIM like navigation of Stack Exchange sites
 // @include		http://stackoverflow.com/*
-// @include		http://meta.stackoverflow.com/*
+// @include		http://meta.stackexchange.com/*
 // @include		http://superuser.com/*
 // @include		http://meta.superuser.com/*
 // @include		http://serverfault.com/*

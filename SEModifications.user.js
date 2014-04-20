@@ -2,7 +2,7 @@
 // @name         SE Modifications
 // @description  A collection of modifications for the Stack Exchange network of sites
 // @match        http://stackoverflow.com/*
-// @match        http://meta.stackoverflow.com/*
+// @match        http://meta.stackexchange.com/*
 // @match        http://superuser.com/*
 // @match        http://meta.superuser.com/*
 // @match        http://serverfault.com/*
