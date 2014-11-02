@@ -5,6 +5,10 @@
 // @include      http://chat.stackexchange.com/rooms/*
 // @include      http://chat.stackoverflow.com/rooms/*
 // @include      http://chat.askubuntu.com/rooms/*
+// @include      https://chat.meta.stackexchange.com/rooms/*
+// @include      https://chat.stackexchange.com/rooms/*
+// @include      https://chat.stackoverflow.com/rooms/*
+// @include      https://chat.askubuntu.com/rooms/*
 // @author       @rchern
 // ==/UserScript==
 
