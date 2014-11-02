@@ -1,14 +1,9 @@
 // ==UserScript==
 // @name         SE Chat Modifications
 // @description  A collection of modifications for SE chat rooms
-// @include      http://chat.meta.stackexchange.com/rooms/*
-// @include      http://chat.stackexchange.com/rooms/*
-// @include      http://chat.stackoverflow.com/rooms/*
-// @include      http://chat.askubuntu.com/rooms/*
-// @include      https://chat.meta.stackexchange.com/rooms/*
-// @include      https://chat.stackexchange.com/rooms/*
-// @include      https://chat.stackoverflow.com/rooms/*
-// @include      https://chat.askubuntu.com/rooms/*
+// @match        *://chat.meta.stackexchange.com/rooms/*
+// @match        *://chat.stackoverflow.com/rooms/*
+// @match        *://chat.stackexchange.com/rooms/*
 // @author       @rchern
 // ==/UserScript==
 
