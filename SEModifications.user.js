@@ -1,19 +1,19 @@
 // ==UserScript==
 // @name         SE Modifications
 // @description  A collection of modifications for the Stack Exchange network of sites
-// @match        http://stackoverflow.com/*
-// @match        http://meta.stackoverflow.com/*
-// @match        http://superuser.com/*
-// @match        http://meta.superuser.com/*
-// @match        http://serverfault.com/*
-// @match        http://meta.serverfault.com/*
-// @match        http://askubuntu.com/*
-// @match        http://meta.askubuntu.com/*
-// @match        http://*.stackexchange.com/*
-// @match        http://answers.onstartups.com/*
-// @match        http://meta.answers.onstartups.com/*
-// @match        http://stackapps.com/*
-// @match        http://mathoverflow.net/*
+// @match        *://stackoverflow.com/*
+// @match        *://meta.stackoverflow.com/*
+// @match        *://superuser.com/*
+// @match        *://meta.superuser.com/*
+// @match        *://serverfault.com/*
+// @match        *://meta.serverfault.com/*
+// @match        *://askubuntu.com/*
+// @match        *://meta.askubuntu.com/*
+// @match        *://*.stackexchange.com/*
+// @match        *://answers.onstartups.com/*
+// @match        *://meta.answers.onstartups.com/*
+// @match        *://stackapps.com/*
+// @match        *://mathoverflow.net/*
 // @exclude      http://chat.stackexchange.com/*
 // @exclude      http://chat.*.stackexchange.com/*
 // @exclude      http://api.*.stackexchange.com/*
