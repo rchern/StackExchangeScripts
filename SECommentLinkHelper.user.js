@@ -60,7 +60,7 @@ inject(function ($) {
             while (url = link.exec(comment)) {
                 var type = url[2] === 'a' ? answers : questions,
                     domain = url[1];
-            
+
                 if (!type[domain])
                     type[domain] = [];
 
@@ -103,7 +103,7 @@ inject(function ($) {
             var i, j, id, post, pattern, swaps = [],
                 swapper = function (s, m1, m2) {
                     swaps.push(m2);
-                    
+
                     return m1 + "~%" + (swaps.length - 1) + "#";
                 },
                 comment = textarea.value;
@@ -111,7 +111,7 @@ inject(function ($) {
             if (results.length) {
                 for (i = 0; i < results.length; ++i) {
                     comment = comment.replace(miniLink, swapper).replace(miniCode, swapper);
-                
+
                     for (j = 0; j < results[i].items.length; ++j) {
                         post = results[i].items[j];
                         id = post.question_id || post.answer_id;
@@ -120,9 +120,9 @@ inject(function ($) {
                             leading = leading || '';
                             trailing = trailing || '';
                             anchor = /^#comment(\d+)_/.exec(anchor || '');
-                            
+
                             var url;
-                            
+
                             if (anchor) {
                                 url = '/posts/comments/' + anchor[1];
                             } else if (type === 'questions' && trailing) {
@@ -132,7 +132,7 @@ inject(function ($) {
                             } else {
                                 url = '/q/' + id;
                             }
-                            
+
                             return leading + '[' + escapeMarkdown(toText(post.title)) + '](http' + https + '://' + results[i].domain + url + ')';
                         });
                     }
@@ -149,13 +149,13 @@ inject(function ($) {
             results = [];
             lock = 0;
         }
-        
+
         function toText(html) {
             span.innerHTML = html;
-            
+
             return span.textContent;
         }
-        
+
         function escapeMarkdown(text) {
             return text.replace(/\[/g, '\\[')
                        .replace(/\]/g, '\\]')
@@ -175,10 +175,10 @@ inject(function ($) {
                             if (typeof(data) === 'string') {
                                 data = JSON.parse(data);
                             }
-                        
+
                             callback(data, domain);
                         }
-                    );                
+                    );
                 }
             });
         }
