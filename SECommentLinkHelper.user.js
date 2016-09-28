@@ -40,13 +40,13 @@ inject(function ($) {
             span = document.createElement('span'),
             link = new RegExp('(?:^|[^\\w\\\\])https?://([^\\s/]+)/(q(?:uestions)?|a)/([0-9]+)', 'ig'),
             lock = 0,
-            submitComment = form.data('events').submit[0].handler,
+            submitComment = $._data(form[0], 'events').submit[0].handler,
             validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
             miniLink = /(^|\W)(\[([^\]]+)\]\((?:(?:https?|ftp):\/\/[^)\s]+?)(?:\s(?:"|&quot;)(?:[^"]+?)(?:"|&quot;))?\))/g,
             miniCode = /(^|\W)(`(?:.+?)`)(?=\W|$)/g,
             results = [];
 
-        form.data('events').submit[0].handler = handler;
+        $._data(form[0], 'events').submit[0].handler = handler;
 
         function handler() {
             if (lock)
