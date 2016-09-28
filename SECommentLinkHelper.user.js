@@ -133,7 +133,7 @@ inject(function ($) {
                                 url = '/q/' + id;
                             }
 
-                            return leading + '[' + escapeMarkdown(toText(post.title)) + '](http' + https + '://' + results[i].domain + url + ')';
+                            return leading + '[' + escapeMarkdown(toText(post.title)) + '](//' + results[i].domain + url + ')';
                         });
                     }
                 }
