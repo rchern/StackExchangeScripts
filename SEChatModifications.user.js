@@ -1554,15 +1554,6 @@ inject(livequery, bindas, expressions, function ($) {
             'padding': '2px 4px 3px',
             'background-color': '#efefef'
         },
-        'span.action_clip': {
-            'display': 'inline-block',
-            'height': '11px',
-            'width': '12px',
-            'margin-right': '3px',
-            'padding': '0',
-            'background': '1px 0px url("http://or.sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
-            'cursor': 'pointer'
-        },
         '.monologue .message:hover .timestamp' : {
             'visibility': 'hidden'
         },
