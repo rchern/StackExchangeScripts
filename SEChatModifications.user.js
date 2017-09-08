@@ -16,7 +16,7 @@ function inject() {
             var script = document.createElement('script');
 
             script.type = 'text/javascript';
-            script.textContent = '(' + arguments[i].toString() + ')(jQuery)';
+            script.textContent = 'if (window.jQuery) (' + arguments[i].toString() + ')(window.jQuery)';
 
             document.body.appendChild(script);
         }
@@ -1474,14 +1474,15 @@ inject(livequery, bindas, expressions, function ($) {
             if (li.appendTo('body').height() > 60) {
                 var h = li.height();
 
-                var a = $('<a />').text('Show').toggle(function () {
-                    $(this).text('Hide').parents('li').animate({
-                        height: h
-                    }, 300);
-                }, function () {
-                    $(this).text('Show').parents('li').animate({
-                        height: 60
-                    }, 300);
+                var a = $('<a />').text('Show').click(function () {
+                    if ( $(this).text() == 'Show' )
+                    {
+                        $(this).text('Hide').parents('li').animate({ height: h}, 300);
+                    }
+                    else
+                    {
+                        $(this).text('Show').parents('li').animate({height: 60}, 300);
+                     }
                 }).appendTo(cl_commands);
 
                 li.click(function () {
@@ -1556,12 +1557,16 @@ inject(livequery, bindas, expressions, function ($) {
         },
         'span.action_clip': {
             'display': 'inline-block',
-            'height': '11px',
-            'width': '12px',
+            'vertical-align': 'baseline',
             'margin-right': '3px',
             'padding': '0',
-            'background': '1px 0px url("http://or.sstatic.net/chat/img/leave-and-switch-icons.png") no-repeat',
-            'cursor': 'pointer'
+            'cursor': 'pointer',
+            'background-image': 'url(https://cdn-chat.sstatic.net/chat/Img/sprites.png)',
+            'background-repeat': 'no-repeat',
+            'background-position': 'top left',
+            'background-position': '0 -275px',
+            'width': '10px',
+            'height': '11px'
         },
         '.monologue .message:hover .timestamp' : {
             'visibility': 'hidden'
@@ -1674,11 +1679,8 @@ function bindas($) {
 
                 $.event.add(elem, type, fn, data);
 
-                var events = $(elem).data(elem.nodeType ? 'events' : '__events__');
-
-                if (events && typeof events === 'function') {
-                    events = events.events;
-                }
+                var events = $._data(elem).events;
+                if ( !events ) continue;
 
                 if (events) {
                     var handlers = events[type],
@@ -1701,6 +1703,9 @@ function bindas($) {
 
 /*
  * Acts a container for the livequery plugin, which is used by this userscript to perform certain functions
+ * NOTE: most of this relies on deprecated and likely broken behavior, but we only use one little portion - the bit that detects jQuery modifying the DOM 
+ * and triggers a handler when a matching element is inserted. This should probably be replaced with a MutationObserver-based system at some point.
+ * DO NOT USE THIS PLUGIN IN ANY OTHER WAY!
  */
 function livequery($) {
     /*! Copyright (c) 2010 Brandon Aaron (http://brandonaaron.net)
