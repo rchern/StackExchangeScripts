@@ -1,4 +1,4 @@
-##SEChatModifications
+## SEChatModifications
 Provides keyboard shortcuts and other commands via input text reducing 
 the dependency on mouse usage.  Currently the script adds the id to the 
 right of each message and the commands take in this id to identify the 
@@ -144,20 +144,20 @@ This script also adds chat-like autocomplete for comments replies, in a way (rel
 consistent with [these criteria](http://meta.stackoverflow.com/questions/43019/how-do-comment-replies-work/43020#43020). 
 Note that while editors can be notified, only the **last** editor's name will show up in the list. 
 
-##SEReputationAuditHelper
+## SEReputationAuditHelper
 This script adds certain useful information to the reputation audit page (`/reputation` on all SE 2.0 sites): 
 
 * Autolinkifies the post ID associated with each reputation event
 * Adds description for each vote type instead of seeing vote ID
 * Adds a links to reputation audit pages for all other SE sites for faster navigation
 
-##SEChatFaviconNotifier
+## SEChatFaviconNotifier
 ![Chatroom favicons with different numbers of unread message counts](http://i.imgur.com/llq97.png)
 
 Adds unread count and @-mention notifications directly to the favicon of 
 the chatroom page. The circle shows the number of unread messages and 
 turns green when someone @-mentions you.
 
-##SECommentLinkHelper
+## SECommentLinkHelper
 Automatically converts raw Stack Exchange question links in comments into their
 correctly-titled `[title](link)` syntax equivalents before posting.
