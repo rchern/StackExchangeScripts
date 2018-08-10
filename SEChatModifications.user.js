@@ -397,6 +397,30 @@ inject(livequery, bindas, expressions, function ($) {
                 }
             }
         })());
+        
+         // paste directly to imgur
+         $(document).on("paste", function(event)
+         {
+            var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+            for (let i=0; i<items.length; ++i)
+            {
+               let kind = items[i].kind,
+                  type = items[i].type;
+               if ( kind !== "file" || type !== "image/png" ) continue;
+
+               let blob = items[i].getAsFile();
+               if ( !blob) continue;
+               
+               var throbber = $("<span><br>uploading<img src='//sstatic.net/img/progress-dots.gif'></span>").appendTo("#chat-buttons");
+
+               SendToImgur(blob).then(function(imageUrl)
+               {
+                  throbber.remove();
+                  input.val(input.val().replace(/\S$/, '$& ') + imageUrl);
+               },
+               function() { throbber.remove() });
+            }
+         });
     });
 
     // Define the snippet list command
@@ -1625,6 +1649,25 @@ inject(livequery, bindas, expressions, function ($) {
             'cursor': 'pointer'
         }
     });
+    
+   function SendToImgur(blob)
+   {
+      var formData = new window.FormData();
+      formData.append('file', blob);
+      formData.append('fkey', fkey());
+
+      return $.ajax({
+         url: "/upload/image?https=true",
+         data: formData,
+         cache: false,
+         contentType: false,
+         processData: false,
+         type: 'POST'
+      }).then(function(result)
+      {
+         return (result.match(/https?:\/\/i\.stack\.imgur\.com\/[a-zA-Z0-9]+\.png/)||[''])[0].replace(/^http:/, 'https:');
+      });
+   }
 });
 
 /*
