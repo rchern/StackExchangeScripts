@@ -5,6 +5,8 @@ right of each message and the commands take in this id to identify the
 selected message. Keyboard navigation support has also been added allowing 
 for individual messages to be navigatable through the keyboard.
 
+[Stack Apps link](https://stackapps.com/questions/2105/se-chat-modifications-keyboard-navigation-and-commands-for-chat)
+
 ### Performing an action on a message
 
 All of the following commands take a single argument - the id of the 
@@ -128,6 +130,8 @@ limited messages can be retried with `ctrl` + `space`
 ## SEModifications
 Provides minor tweaks to StackExchange sites.
 
+[Stack Apps link](https://stackapps.com/questions/2138/se-modifications-username-autocomplete-in-comments-inline-revision-source-a)
+
 * Adds a timeline link to each question page
 * Turns comment timestamps into links to the comment, so that they can be linked to.
   This will only work if the comment is visible when the page is linked to - posts with more than
@@ -161,3 +165,5 @@ turns green when someone @-mentions you.
 ## SECommentLinkHelper
 Automatically converts raw Stack Exchange question links in comments into their
 correctly-titled `[title](link)` syntax equivalents before posting.
+
+[Stack Apps link](https://stackapps.com/questions/2378/se-comment-link-helper)
