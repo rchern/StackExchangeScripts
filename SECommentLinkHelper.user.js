@@ -3,6 +3,16 @@
 // @description   A hook to transform raw links to properly titled links in comments
 // @match         *://stackoverflow.com/*
 // @match         *://meta.stackoverflow.com/*
+// @match         *://es.stackoverflow.com/*
+// @match         *://es.meta.stackoverflow.com/*
+// @match         *://ja.stackoverflow.com/*
+// @match         *://ja.meta.stackoverflow.com/*
+// @match         *://pt.stackoverflow.com/*
+// @match         *://pt.meta.stackoverflow.com/*
+// @match         *://ru.stackoverflow.com/*
+// @match         *://ru.meta.stackoverflow.com/*
+// @match         *://mathoverflow.net/*
+// @match         *://meta.mathoverflow.net/*
 // @match         *://superuser.com/*
 // @match         *://meta.superuser.com/*
 // @match         *://serverfault.com/*
@@ -11,6 +21,7 @@
 // @match         *://meta.askubuntu.com/*
 // @match         *://stackapps.com/*
 // @match         *://*.stackexchange.com/*
+// @match         *://*.meta.stackexchange.com/*
 // @exclude       *://chat.stackexchange.com/*
 // @exclude       *://chat.*.stackexchange.com/*
 // @exclude       *://api.*.stackexchange.com/*
@@ -41,7 +52,33 @@ inject(function ($) {
             link = new RegExp('(?:^|[^\\w\\\\])https?://([^\\s/]+)/(q(?:uestions)?|a)/([0-9]+)', 'ig'),
             lock = 0,
             submitComment = $._data(form[0], 'events').submit[0].handler,
-            validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
+            // regex tested with
+            // $.getJSON('https://api.stackexchange.com/2.2/sites?pagesize=1000&filter=!6P.Ehvyb0IX7X')
+            //   .done(data => {
+            //     const domains = data.items.map(item => new URL(item.site_url).hostname),
+            //           missed = domains.filter(d => !validSites.test(d))
+            //     if (missed.length) { console.error('Domains missed', missed) }
+            //     else { console.log('Test passed') }
+            //   });
+            validSites = new RegExp(
+                '^(?:' + // one of: top-level names, with their meta sites
+                    '(?:' +  
+                        '(?:meta\\.)?' +
+                        '(?:' +   // one of: <domain>.com names
+                            '(?:stackoverflow|serverfault|askubuntu|superuser)\\.com' +
+                            '|' + // or:     mathoverflow.net
+                            'mathoverflow\\.net' +
+                        ')' +
+                    ')' +
+                '|' +    // or:     stackapps, which has no meta.
+                    'stackapps\\.com' +
+                '|' +    // or:     the language-variants of stackoverflow.com
+                    '(?:es|ja|pt|ru)\\.(?:meta\\.)?stackoverflow\\.com' +
+                '|' +    // or:     .stackexchange sites, with their meta sites.
+                    '[^.]+\\.(?:meta\\.)?stackexchange\\.com' +
+                ')$',
+                'i'
+            ),
             miniLink = /(^|\W)(\[([^\]]+)\]\((?:(?:https?|ftp):\/\/[^)\s]+?)(?:\s(?:"|&quot;)(?:[^"]+?)(?:"|&quot;))?\))/g,
             miniCode = /(^|\W)(`(?:.+?)`)(?=\W|$)/g,
             results = [];
