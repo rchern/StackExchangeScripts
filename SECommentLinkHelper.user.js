@@ -1,6 +1,9 @@
 // ==UserScript==
 // @name          SE Comment Link Helper
 // @description   A hook to transform raw links to properly titled links in comments
+// @version       1.24
+// @homepageURL   https://stackapps.com/questions/2378/se-comment-link-helper
+// @namespace     https://github.com/rchern/StackExchangeScripts
 // @match         *://stackoverflow.com/*
 // @match         *://meta.stackoverflow.com/*
 // @match         *://es.stackoverflow.com/*
