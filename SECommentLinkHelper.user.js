@@ -1,8 +1,21 @@
 // ==UserScript==
 // @name          SE Comment Link Helper
 // @description   A hook to transform raw links to properly titled links in comments
+// @version       1.24
+// @homepageURL   https://stackapps.com/questions/2378/se-comment-link-helper
+// @namespace     https://github.com/rchern/StackExchangeScripts
 // @match         *://stackoverflow.com/*
 // @match         *://meta.stackoverflow.com/*
+// @match         *://es.stackoverflow.com/*
+// @match         *://es.meta.stackoverflow.com/*
+// @match         *://ja.stackoverflow.com/*
+// @match         *://ja.meta.stackoverflow.com/*
+// @match         *://pt.stackoverflow.com/*
+// @match         *://pt.meta.stackoverflow.com/*
+// @match         *://ru.stackoverflow.com/*
+// @match         *://ru.meta.stackoverflow.com/*
+// @match         *://mathoverflow.net/*
+// @match         *://meta.mathoverflow.net/*
 // @match         *://superuser.com/*
 // @match         *://meta.superuser.com/*
 // @match         *://serverfault.com/*
@@ -11,6 +24,7 @@
 // @match         *://meta.askubuntu.com/*
 // @match         *://stackapps.com/*
 // @match         *://*.stackexchange.com/*
+// @match         *://*.meta.stackexchange.com/*
 // @exclude       *://chat.stackexchange.com/*
 // @exclude       *://chat.*.stackexchange.com/*
 // @exclude       *://api.*.stackexchange.com/*
@@ -41,7 +55,33 @@ inject(function ($) {
             link = new RegExp('(?:^|[^\\w\\\\])https?://([^\\s/]+)/(q(?:uestions)?|a)/([0-9]+)', 'ig'),
             lock = 0,
             submitComment = $._data(form[0], 'events').submit[0].handler,
-            validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
+            // regex tested with
+            // $.getJSON('https://api.stackexchange.com/2.2/sites?pagesize=1000&filter=!6P.Ehvyb0IX7X')
+            //   .done(data => {
+            //     const domains = data.items.map(item => new URL(item.site_url).hostname),
+            //           missed = domains.filter(d => !validSites.test(d))
+            //     if (missed.length) { console.error('Domains missed', missed) }
+            //     else { console.log('Test passed') }
+            //   });
+            validSites = new RegExp(
+                '^(?:' + // one of: top-level names, with their meta sites
+                    '(?:' +  
+                        '(?:meta\\.)?' +
+                        '(?:' +   // one of: <domain>.com names
+                            '(?:stackoverflow|serverfault|askubuntu|superuser)\\.com' +
+                            '|' + // or:     mathoverflow.net
+                            'mathoverflow\\.net' +
+                        ')' +
+                    ')' +
+                '|' +    // or:     stackapps, which has no meta.
+                    'stackapps\\.com' +
+                '|' +    // or:     the language-variants of stackoverflow.com
+                    '(?:es|ja|pt|ru)\\.(?:meta\\.)?stackoverflow\\.com' +
+                '|' +    // or:     .stackexchange sites, with their meta sites.
+                    '[^.]+\\.(?:meta\\.)?stackexchange\\.com' +
+                ')$',
+                'i'
+            ),
             miniLink = /(^|\W)(\[([^\]]+)\]\((?:(?:https?|ftp):\/\/[^)\s]+?)(?:\s(?:"|&quot;)(?:[^"]+?)(?:"|&quot;))?\))/g,
             miniCode = /(^|\W)(`(?:.+?)`)(?=\W|$)/g,
             results = [];
@@ -70,8 +110,13 @@ inject(function ($) {
             if (Object.keys(questions).length || Object.keys(answers).length) {
                 request(questions, 'questions', callback);
                 request(answers, 'answers', callback);
-            } else {
-                submit.call(form.eq(0));
+            }
+            
+            if (lock < 0) {
+                // either no question and answer links were detected, *or* none of the
+                // links were for valid sites and so no AJAX requests were started.
+                // In either case we need to trigger the comment submit at this point.
+                submit();
             }
 
             link.lastIndex = 0;
@@ -133,8 +178,7 @@ inject(function ($) {
                                 url = '/q/' + id;
                             }
 
-                            return leading + '[' +
-                            escapeMarkdown(cleanWhitespace(toText(post.title))) + '](//' + results[i].domain + url + ')';
+                            return leading + '[' + escapeMarkdown(cleanWhitespace(toText(post.title))) + '](https://' + results[i].domain + url + ')';
                         });
                     }
                 }
