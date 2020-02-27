@@ -11,6 +11,8 @@
 // @match         *://meta.askubuntu.com/*
 // @match         *://stackapps.com/*
 // @match         *://*.stackexchange.com/*
+// @match         *://mathoverflow.net/*
+// @match         *://meta.mathoverflow.net/*
 // @exclude       *://chat.stackexchange.com/*
 // @exclude       *://chat.*.stackexchange.com/*
 // @exclude       *://api.*.stackexchange.com/*
@@ -41,7 +43,7 @@ inject(function ($) {
             link = new RegExp('(?:^|[^\\w\\\\])https?://([^\\s/]+)/(q(?:uestions)?|a)/([0-9]+)', 'ig'),
             lock = 0,
             submitComment = $._data(form[0], 'events').submit[0].handler,
-            validSites = /^(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com$/i,
+            validSites = /^(?:(?:(?:(?:meta\.)?(?:stackoverflow|[^.]+\.stackexchange|serverfault|askubuntu|superuser))|stackapps)\.com|(?:meta\.)?mathoverflow\.net)$/i,
             miniLink = /(^|\W)(\[([^\]]+)\]\((?:(?:https?|ftp):\/\/[^)\s]+?)(?:\s(?:"|&quot;)(?:[^"]+?)(?:"|&quot;))?\))/g,
             miniCode = /(^|\W)(`(?:.+?)`)(?=\W|$)/g,
             results = [];
