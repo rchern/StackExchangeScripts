@@ -110,8 +110,13 @@ inject(function ($) {
             if (Object.keys(questions).length || Object.keys(answers).length) {
                 request(questions, 'questions', callback);
                 request(answers, 'answers', callback);
-            } else {
-                submit.call(form.eq(0));
+            }
+            
+            if (lock < 0) {
+                // either no question and answer links were detected, *or* none of the
+                // links were for valid sites and so no AJAX requests were started.
+                // In either case we need to trigger the comment submit at this point.
+                submit();
             }
 
             link.lastIndex = 0;
