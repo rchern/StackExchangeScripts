@@ -178,7 +178,7 @@ inject(function ($) {
                                 url = '/q/' + id;
                             }
 
-                            return leading + '[' + escapeMarkdown(toText(post.title)) + '](https://' + results[i].domain + url + ')';
+                            return leading + '[' + escapeMarkdown(cleanWhitespace(toText(post.title))) + '](https://' + results[i].domain + url + ')';
                         });
                     }
                 }
@@ -199,6 +199,12 @@ inject(function ($) {
             span.innerHTML = html;
 
             return span.textContent;
+        }
+
+        function cleanWhitespace(text) {
+            // remove leading and trailing whitespace, collapse multiple spaces
+            // into one everywhere else.
+            return text.replace(/^\s+|\s+$/g, '').replace(/\s+/g, ' ');
         }
 
         function escapeMarkdown(text) {
