@@ -104,7 +104,7 @@ with_jquery(function ($) {
 			} else {
 				i = i % items.length;
 			}
-			selectedItem = items.css("padding", "5px").css("border", "1px solid " + $("#content").css("backgroundColor")).eq(i);
+			selectedItem = items.removeAttr("style").eq(i);
 			selectedItem.css("border", "1px dashed black");
 			if (!selectedItem.is(":fully-visible")) {
 				$.scrollTo(selectedItem);
