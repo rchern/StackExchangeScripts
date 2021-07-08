@@ -357,13 +357,25 @@ inject(livequery, bindas, expressions, function ($) {
 
         $('#chat .message').livequery(function () {
             var self = this;
-
-            $('<span class="action_clip" />')
+            if ($(this).find('.meta').find('.newreply').length == 0)
+            {
+                $('<span class="newreply" />')
+                .prependTo($(this).find('.meta'))
+                .attr('title', "link my next chat message as a reply to this")
+                .click(function () {
+                    var n = $("#input").focus().val().replace(/^:([0-9]+)\s+/, "");
+                    $("#input").focus().val(":" + self.id.substring(8) + " " + n)
+                });
+            }
+            if ($(this).find('.meta').find('.action_clip').length == 0)
+            {
+                $('<span class="action_clip" />')
                 .prependTo($(this).find('.meta'))
                 .attr('title', "Add this message to my clipboard")
                 .click(function () {
                     ChatExtension.execute('jot', [self.id.substring(8)]);
                 });
+            }
         });
         
         // Hijack image uploader so we can preserve a leading :id
